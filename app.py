@@ -40,7 +40,6 @@ def obtener_y_registrar_correlativo(cliente_tipo, cliente_nombre, marca, modelo,
             spreadsheet = client.open(NOMBRE_HOJA_GOOGLE)
             try: worksheet_hist = spreadsheet.worksheet("Historial")
             except:
-                # Agregamos la columna Forma Pago al historial
                 worksheet_hist = spreadsheet.add_worksheet(title="Historial", rows="1000", cols="10")
                 worksheet_hist.append_row(["Fecha", "Hora", "Correlativo", "Tipo Cliente", "Nombre Cliente", "Marca", "Modelo", "Año", "Patente", "Forma Pago", "Monto Total"])
             
@@ -60,24 +59,20 @@ def obtener_y_registrar_correlativo(cliente_tipo, cliente_nombre, marca, modelo,
 # ==========================================
 EMPRESA_NOMBRE = "PASCUAL PARABRISAS"
 EMPRESA_TITULAR = "Venta e Instalación de Cristales Automotrices"
-RUT_EMPRESA = "76.XXX.XXX-X" 
-DIRECCION = "Dirección de Pascual" 
-TELEFONO = "+56 9 XXXX XXXX" 
-EMAIL = "contacto@pascualparabrisas.cl" 
+RUT_EMPRESA = "76.XXX.XXX-X" # Reemplazar con el RUT real
+DIRECCION = "Caupolicán 098 y Caupolicán 320, Temuco" 
 
-# Tono Naranja Corporativo basado en su Instagram
-NARANJA_PASCUAL = (225, 100, 25) 
-COLOR_HEX = "#E16419"
+# Tono Naranja Intenso solicitado
+COLOR_HEX = "#FF5200"
+NARANJA_PASCUAL = (255, 82, 0) 
 
 # Inyectamos CSS para pintar la App de Naranjo
 st.markdown(f"""
 <style>
-    /* Bordes de contenedores */
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 5px; }}
     div[data-testid="stNumberInput"] input {{ max-width: 150px; text-align: center; }}
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     
-    /* Botones primarios Naranjos */
     .stButton > button[kind="primary"] {{
         background-color: {COLOR_HEX} !important;
         border-color: {COLOR_HEX} !important;
@@ -85,21 +80,17 @@ st.markdown(f"""
         font-weight: bold;
     }}
     .stButton > button[kind="primary"]:hover {{
-        background-color: #C05010 !important;
-        border-color: #C05010 !important;
+        background-color: #E04800 !important;
+        border-color: #E04800 !important;
     }}
     
-    /* Pestañas */
     .stTabs [aria-selected="true"] {{ background-color: {COLOR_HEX} !important; color: white !important; border-radius: 4px;}}
-    
-    /* Radio buttons */
     div[data-testid="stRadio"] > label {{ font-weight: bold; color: {COLOR_HEX}; }}
 </style>
 """, unsafe_allow_html=True)
 
 LISTA_ASEGURADORAS = ["--- Seleccione Compañía ---", "BCI Seguros", "Liberty Seguros", "Mapfre", "HDI Seguros", "Consorcio", "Chilena Consolidada", "Reale Seguros", "Sura", "Zenit", "Unnio", "Otra..."]
 LISTA_MARCAS = ["--- Seleccione Marca ---", "Audi", "BMW", "Chery", "Chevrolet", "Changan", "Citroën", "Dodge", "Dongfeng", "Fiat", "Ford", "Foton", "Great Wall", "Honda", "Hyundai", "JAC", "Jeep", "Kia", "Maxus", "Mazda", "Mercedes-Benz", "MG", "Mitsubishi", "Nissan", "Peugeot", "Renault", "SsangYong", "Subaru", "Suzuki", "Toyota", "Volkswagen", "Volvo", "Otra..."]
-# Generar años desde el próximo hasta 1990
 LISTA_ANOS = list(range(datetime.now().year + 1, 1989, -1))
 LISTA_PAGOS = ["--- Seleccione ---", "Orden de Compra (Empresas/Kaufmann)", "Transferencia Electrónica", "Contado / Efectivo", "Tarjeta Crédito / Débito", "Pago de Deducible (Seguros)"]
 
@@ -120,7 +111,7 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 4. PDF (DISEÑO CORPORATIVO ALINEADO)
+# 4. PDF (DISEÑO CORPORATIVO ALINEADO Y CORREGIDO)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, logo_header=None, correlativo=""):
@@ -129,30 +120,33 @@ class PDF(FPDF):
         self.correlativo = correlativo
 
     def header(self):
+        # Cuadro Presupuesto (Borde Naranja, TEXTO NEGRO)
         self.set_xy(130, 10)
         self.set_font('Arial', 'B', 14)
-        self.set_text_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
+        self.set_text_color(0, 0, 0) # Negro
+        self.set_draw_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
         titulo = "PRESUPUESTO"
         if self.correlativo and self.correlativo != "BORRADOR": titulo += f" N° {self.correlativo}"
         self.cell(70, 10, titulo, 1, 1, 'C')
+        self.set_draw_color(0, 0, 0) # Resetea borde a negro
         
         self.set_xy(130, 20)
-        self.set_text_color(0, 0, 0)
         self.set_font('Arial', '', 10)
         self.cell(70, 8, f"Fecha Emisión: {datetime.now().strftime('%d/%m/%Y')}", 1, 1, 'C')
 
+        # Logo a la izquierda
         logo_footer = encontrar_imagen("logo") 
-        if logo_footer: self.image(logo_footer, x=10, y=8, w=35)
+        if logo_footer: self.image(logo_footer, x=10, y=8, w=40) # w=40 da buen tamaño al logo
 
-        self.set_xy(48, 10)
+        # Textos movidos a X=55 para que no choquen con el logo
+        self.set_xy(55, 10)
         self.set_font('Arial', 'B', 14) 
         self.cell(115, 6, EMPRESA_NOMBRE, 0, 1, 'L')
-        self.set_font('Arial', '', 9)
-        self.cell(115, 5, EMPRESA_TITULAR, 0, 1, 'L')
-        self.cell(115, 5, f"RUT: {RUT_EMPRESA}", 0, 1, 'L')
-        self.cell(115, 5, f"Dirección: {DIRECCION}", 0, 1, 'L')
-        self.cell(115, 5, f"Teléfono: {TELEFONO}", 0, 1, 'L')
-        self.cell(115, 5, f"E-mail: {EMAIL}", 0, 1, 'L')
+        self.set_font('Arial', '', 8) # Letra 8 para que quepa todo perfecto
+        self.set_x(55); self.cell(115, 4, EMPRESA_TITULAR, 0, 1, 'L')
+        self.set_x(55); self.cell(115, 4, f"RUT: {RUT_EMPRESA} | Dirección: {DIRECCION}", 0, 1, 'L')
+        self.set_x(55); self.cell(115, 4, "Contacto: Ana María Riquelme | +56944918018 | ejecutivapascual@gmail.com", 0, 1, 'L')
+        self.set_x(55); self.cell(115, 4, "Gerencia: Gonzalo Pascual J. | pascualparabrisas@hotmail.com", 0, 1, 'L')
         self.ln(12)
 
     def footer(self):
@@ -162,7 +156,7 @@ class PDF(FPDF):
         self.line(10, 275, 200, 275)
         self.cell(0, 5, "Documento generado automáticamente - Pascual Parabrisas", 0, 1, 'C')
 
-def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, marca, modelo, ano, patente, condicion_pago, items, total_neto, fotos_adjuntas):
+def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, contacto_nombre, contacto_fono, marca, modelo, ano, patente, tipo_servicio, dir_servicio, condicion_pago, descuento_pct, items, fotos_adjuntas):
     pdf = PDF(correlativo=st.session_state.get('correlativo_temp', 'BORRADOR'))
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=30) 
     
@@ -170,56 +164,65 @@ def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, marca, mod
     pdf.multi_cell(0, 5, "De nuestra consideración: Por medio de la presente, y en respuesta a su solicitud, presentamos la siguiente propuesta técnica y económica para la provisión e instalación de cristales automotrices y/o servicios asociados.")
     pdf.ln(5)
 
-    # Identificación
+    # Bloque 1: Identificación
     pdf.set_font('Arial', 'B', 11); pdf.set_fill_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 8, " 1. IDENTIFICACIÓN DEL CLIENTE Y VEHÍCULO", 1, 1, 'L', 1)
+    pdf.cell(0, 7, " 1. IDENTIFICACIÓN DEL CLIENTE Y VEHÍCULO", 1, 1, 'L', 1)
     
-    pdf.set_text_color(0, 0, 0); pdf.set_font('Arial', 'B', 10)
-    pdf.cell(35, 7, "TIPO CLIENTE:", 'L', 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(0, 7, str(cliente_tipo).upper(), 'R', 1)
-
-    pdf.set_font('Arial', 'B', 10)
+    pdf.set_text_color(0, 0, 0); pdf.set_font('Arial', 'B', 9)
+    
+    # Fila 1
+    pdf.cell(30, 6, "TIPO CLIENTE:", 'L', 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(60, 6, str(cliente_tipo).upper(), 0, 0)
+    pdf.set_font('Arial', 'B', 9)
     label_cliente = "COMPAÑÍA:" if cliente_tipo == "Compañía de Seguros" else "CLIENTE:"
-    pdf.cell(35, 7, label_cliente, 'L', 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(0, 7, str(cliente_nombre).upper(), 'R', 1)
-    
-    if cliente_tipo == "Empresa" and rut_empresa:
-        pdf.set_font('Arial', 'B', 10); pdf.cell(35, 7, "RUT EMPRESA:", 'L', 0)
-        pdf.set_font('Arial', '', 10); pdf.cell(0, 7, str(rut_empresa).upper(), 'R', 1)
+    pdf.cell(25, 6, label_cliente, 0, 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(0, 6, str(cliente_nombre).upper(), 'R', 1)
 
-    pdf.set_font('Arial', 'B', 10); pdf.cell(35, 7, "MARCA:", 'L', 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(50, 7, str(marca).upper(), 0, 0)
-    
-    pdf.set_font('Arial', 'B', 10); pdf.cell(25, 7, "MODELO:", 0, 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(0, 7, str(modelo).upper(), 'R', 1)
+    # Fila 2
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "CONTACTO:", 'L', 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(60, 6, str(contacto_nombre).upper() if contacto_nombre else "N/A", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, "TELÉFONO:", 0, 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(0, 6, str(contacto_fono).upper() if contacto_fono else "N/A", 'R', 1)
 
-    # Quitamos borde inferior a Año y Patente para agregar la forma de pago abajo
-    pdf.set_font('Arial', 'B', 10); pdf.cell(35, 7, "AÑO:", 'L', 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(50, 7, str(ano), 0, 0)
-    
-    pdf.set_font('Arial', 'B', 10); pdf.cell(25, 7, "PATENTE:", 0, 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(0, 7, str(patente).upper() if patente else "S/P", 'R', 1)
+    # Fila 3
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "MARCA:", 'L', 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(60, 6, str(marca).upper(), 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, "MODELO:", 0, 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(0, 6, str(modelo).upper(), 'R', 1)
 
-    # Nueva Fila: Forma de Pago
-    pdf.set_font('Arial', 'B', 10); pdf.cell(35, 7, "FORMA PAGO:", 'L,B', 0)
-    pdf.set_font('Arial', '', 10); pdf.cell(0, 7, str(condicion_pago).upper(), 'R,B', 1)
+    # Fila 4
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "AÑO:", 'L', 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(60, 6, str(ano), 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, "PATENTE:", 0, 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(0, 6, str(patente).upper() if patente else "S/P", 'R', 1)
 
-    pdf.ln(8)
+    # Fila 5
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "LUGAR SERV.:", 'L', 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(60, 6, str(tipo_servicio).upper(), 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, "DIRECCIÓN:", 0, 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(0, 6, str(dir_servicio).upper() if tipo_servicio == "En Terreno" else "TALLER PASCUAL", 'R', 1)
+
+    # Fila 6
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "FORMA PAGO:", 'L,B', 0)
+    pdf.set_font('Arial', '', 9); pdf.cell(0, 6, str(condicion_pago).upper(), 'R,B', 1)
+
+    pdf.ln(6)
     
-    # Tabla de Ítems
+    # Bloque 2: Tabla de Ítems
     pdf.set_font('Arial', 'B', 11); pdf.set_fill_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
     pdf.set_text_color(255,255,255)
-    pdf.cell(0, 8, " 2. DETALLE DE CRISTALES Y SERVICIOS", 1, 1, 'L', 1)
+    pdf.cell(0, 7, " 2. DETALLE DE CRISTALES Y SERVICIOS", 1, 1, 'L', 1)
     
     pdf.set_font('Arial', 'B', 9)
-    pdf.cell(110, 8, "DESCRIPCIÓN", 1, 0, 'C', 1)
-    pdf.cell(20, 8, "CANT.", 1, 0, 'C', 1)
-    pdf.cell(30, 8, "PRECIO UNIT.", 1, 0, 'C', 1)
-    pdf.cell(30, 8, "TOTAL", 1, 1, 'C', 1)
+    pdf.cell(110, 7, "DESCRIPCIÓN", 1, 0, 'C', 1)
+    pdf.cell(20, 7, "CANT.", 1, 0, 'C', 1)
+    pdf.cell(30, 7, "PRECIO UNIT.", 1, 0, 'C', 1)
+    pdf.cell(30, 7, "TOTAL", 1, 1, 'C', 1)
     
     pdf.set_text_color(0,0,0); pdf.set_font('Arial', '', 9)
 
+    total_neto = 0
     for item in items:
         x = pdf.get_x(); y = pdf.get_y()
         pdf.multi_cell(110, 6, item['Descripción'].upper(), 1, 'L')
@@ -229,19 +232,30 @@ def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, marca, mod
         pdf.cell(30, h, format_clp(item['Unitario']), 1, 0, 'R')
         pdf.cell(30, h, format_clp(item['Total']), 1, 0, 'R')
         pdf.set_xy(x, y + h)
+        total_neto += item['Total']
 
-    # --- ALINEACIÓN PERFECTA DEL TOTAL ---
-    # La tabla mide 190mm de ancho. Empezamos en X=10. Termina en 200.
-    # Los cuadros de Total medirán 40 + 30 = 70.
-    # Si seteamos X=130, terminan exactamente en 200, alineándose con el borde derecho.
+    # Cálculos Totales
+    monto_descuento = total_neto * (descuento_pct / 100.0)
+    subtotal = total_neto - monto_descuento
+    iva = subtotal * 0.19
+    bruto = subtotal + iva
+
     pdf.ln(2)
-    iva = total_neto * 0.19; bruto = total_neto + iva
-    pdf.set_x(130); pdf.cell(40, 7, "Valor Neto:", 1, 0, 'L'); pdf.cell(30, 7, format_clp(total_neto), 1, 1, 'R')
-    pdf.set_x(130); pdf.cell(40, 7, "IVA (19%):", 1, 0, 'L'); pdf.cell(30, 7, format_clp(iva), 1, 1, 'R')
+    # Totales alineados a X=130
+    pdf.set_x(130); pdf.cell(40, 6, "Total Neto:", 1, 0, 'L'); pdf.cell(30, 6, format_clp(total_neto), 1, 1, 'R')
+    
+    if descuento_pct > 0:
+        pdf.set_x(130); pdf.cell(40, 6, f"Descuento ({descuento_pct}%):", 1, 0, 'L'); pdf.cell(30, 6, f"- {format_clp(monto_descuento)}", 1, 1, 'R')
+        pdf.set_x(130); pdf.cell(40, 6, "Subtotal Neto:", 1, 0, 'L'); pdf.cell(30, 6, format_clp(subtotal), 1, 1, 'R')
+        
+    pdf.set_x(130); pdf.cell(40, 6, "IVA (19%):", 1, 0, 'L'); pdf.cell(30, 6, format_clp(iva), 1, 1, 'R')
+    
     pdf.set_font('Arial', 'B', 10); pdf.set_x(130)
-    pdf.set_text_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
+    pdf.set_text_color(0, 0, 0) # TEXTO NEGRO
+    pdf.set_draw_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
+    # Borde naranja, texto negro
     pdf.cell(40, 8, "TOTAL A PAGAR:", 1, 0, 'L'); pdf.cell(30, 8, format_clp(bruto), 1, 1, 'R')
-    pdf.set_text_color(0,0,0)
+    pdf.set_draw_color(0, 0, 0) # reset
 
     # Condiciones Comerciales
     pdf.ln(12)
@@ -256,7 +270,7 @@ def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, marca, mod
     pdf.multi_cell(0, 5, condiciones, 1, 'L')
 
     # Firmas
-    pdf.ln(20)
+    pdf.ln(15)
     pdf.set_draw_color(150, 150, 150)
     pdf.line(30, pdf.get_y(), 80, pdf.get_y()); pdf.line(130, pdf.get_y(), 180, pdf.get_y())
     pdf.set_font('Arial', 'B', 9)
@@ -300,14 +314,13 @@ if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 if st.session_state.paso_actual == 1:
     col_centro = st.columns([1, 2, 1])
     with col_centro[1]:
-        # Mostrar logo en grande arriba del título si existe
         logo_main = encontrar_imagen("logo") 
         if logo_main: st.image(logo_main, width=250)
         
         st.title("Cotizador de Cristales")
-        st.markdown("#### 1. Identificación de Cliente y Vehículo")
+        st.markdown("#### 1. Identificación de Cliente y Servicio")
         
-        st.markdown("**Tipo de Cliente**")
+        st.markdown("**Empresa o Cliente a Facturar**")
         cliente_tipo = st.radio("", ("Particular", "Empresa", "Compañía de Seguros"), horizontal=True, label_visibility="collapsed")
         
         cliente_final = ""; rut_empresa = ""
@@ -321,7 +334,10 @@ if st.session_state.paso_actual == 1:
         else:
             cliente_final = st.text_input("Nombre del Cliente Particular", placeholder="Ej: Juan Pérez")
             
-        # --- MEJORA: Condición de Pago ---
+        c_c1, c_c2 = st.columns(2)
+        contacto_nombre = c_c1.text_input("Nombre y Apellido del Contacto", placeholder="Persona a cargo")
+        contacto_fono = c_c2.text_input("Teléfono del Contacto", placeholder="Ej: +56 9 1234 5678")
+
         condicion_pago = st.selectbox("Condición de Pago Acordada", LISTA_PAGOS)
 
         st.markdown("---")
@@ -331,32 +347,48 @@ if st.session_state.paso_actual == 1:
         modelo_input = c_m2.text_input("Modelo", placeholder="Ej: Hilux, Sprinter, Yaris...")
         
         c_a1, c_a2 = st.columns(2)
-        # --- MEJORA: Lista desplegable de años (por defecto el año actual que es index 1) ---
         ano_input = c_a1.selectbox("Año", LISTA_ANOS, index=1)
         patente_input = c_a2.text_input("Patente (Opcional)", placeholder="Ej: AB-CD-12")
+
+        st.markdown("---")
+        st.markdown("**Detalles del Servicio**")
+        c_s1, c_s2 = st.columns(2)
+        tipo_servicio = c_s1.radio("Lugar del Servicio", ("En Taller", "En Terreno"), horizontal=True)
+        dir_servicio = ""
+        if tipo_servicio == "En Terreno":
+            dir_servicio = c_s2.text_input("Dirección de visita", placeholder="Ej: Las Encinas 123, Temuco")
+        
+        descuento_input = st.number_input("Descuento a aplicar (%)", min_value=0, max_value=100, value=0, step=1, help="Dejar en 0 si no aplica")
         
         if st.button("🚀 PASO SIGUIENTE: AGREGAR CRISTALES", type="primary", use_container_width=True):
             error = False
             if cliente_tipo == "Compañía de Seguros" and cliente_final == "--- Seleccione Compañía ---":
-                st.error("⛔ Por favor, seleccione una Compañía de Seguros."); error = True
+                st.error("⛔ Seleccione una Compañía de Seguros."); error = True
             elif not cliente_final and cliente_tipo != "Compañía de Seguros":
-                st.error("⛔ Por favor, ingrese el nombre del Cliente."); error = True
+                st.error("⛔ Ingrese el nombre del Cliente."); error = True
             elif condicion_pago == "--- Seleccione ---":
-                st.error("⛔ Por favor, seleccione una Condición de Pago."); error = True
+                st.error("⛔ Seleccione una Condición de Pago."); error = True
             elif marca_input == "--- Seleccione Marca ---":
-                st.error("⛔ Por favor, seleccione la Marca del vehículo."); error = True
+                st.error("⛔ Seleccione la Marca del vehículo."); error = True
             elif not modelo_input:
-                st.error("⛔ Por favor, ingrese el Modelo."); error = True
+                st.error("⛔ Ingrese el Modelo."); error = True
+            elif tipo_servicio == "En Terreno" and not dir_servicio:
+                st.error("⛔ Ingrese la dirección para el servicio en terreno."); error = True
                 
             if not error:
                 st.session_state.cliente_tipo_confirmado = cliente_tipo
                 st.session_state.cliente_confirmado = cliente_final.upper()
                 st.session_state.rut_empresa_confirmado = rut_empresa.upper()
+                st.session_state.contacto_nombre_confirmado = contacto_nombre
+                st.session_state.contacto_fono_confirmado = contacto_fono
                 st.session_state.pago_confirmado = condicion_pago
                 st.session_state.marca_confirmada = marca_input.upper()
                 st.session_state.modelo_confirmado = modelo_input.upper()
                 st.session_state.ano_confirmado = ano_input
                 st.session_state.patente_confirmada = patente_input.upper()
+                st.session_state.tipo_servicio_confirmado = tipo_servicio
+                st.session_state.dir_servicio_confirmada = dir_servicio
+                st.session_state.descuento_confirmado = descuento_input
                 st.session_state.paso_actual = 2
                 st.rerun()
 
@@ -367,12 +399,15 @@ elif st.session_state.paso_actual == 2:
     c_mar = st.session_state.marca_confirmada
     c_mod = st.session_state.modelo_confirmado
     c_ano = st.session_state.ano_confirmado
-    c_pag = st.session_state.pago_confirmado
+    desc_val = st.session_state.descuento_confirmado
     
     c1, c2 = st.columns([1, 5])
     with c1: 
         if st.button("⬅️ Volver"): st.session_state.paso_actual = 1; st.rerun()
-    with c2: st.markdown(f"### 🪟 <span style='color:{COLOR_HEX};'>{c_mar} {c_mod} ({c_ano})</span> | {c_tip}: {c_cli}", unsafe_allow_html=True)
+    with c2: 
+        st.markdown(f"### 🪟 <span style='color:{COLOR_HEX};'>{c_mar} {c_mod} ({c_ano})</span> | {c_tip}: {c_cli}", unsafe_allow_html=True)
+        if desc_val > 0:
+            st.success(f"🏷️ Cotización aplicando un {desc_val}% de descuento.")
     
     if 'items_manuales_parabrisas' not in st.session_state: st.session_state.items_manuales_parabrisas = []
     
@@ -404,22 +439,33 @@ elif st.session_state.paso_actual == 2:
 
         st.markdown("---")
         total_neto = sum(x['Total'] for x in seleccion_final)
+        monto_descuento = total_neto * (desc_val / 100.0)
+        subtotal = total_neto - monto_descuento
+        iva = subtotal * 0.19
+        total_final = subtotal + iva
         
         st.subheader("📊 Resumen Final")
-        k1, k2, k3 = st.columns(3)
-        k1.metric("Valor Neto", format_clp(total_neto))
-        iva = total_neto * 0.19; k2.metric("IVA (19%)", format_clp(iva))
-        total_final = total_neto + iva; k3.metric("TOTAL A PAGAR", format_clp(total_final))
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Valor Neto Bruto", format_clp(total_neto))
+        k2.metric(f"Descuento ({desc_val}%)", f"- {format_clp(monto_descuento)}")
+        k3.metric("IVA (19%)", format_clp(iva))
+        k4.metric("TOTAL A PAGAR", format_clp(total_final))
 
         st.markdown("### 📸 Fotografías (Crucial para Seguros)")
         fotos_adjuntas = st.file_uploader("Adjuntar fotos de daños, padrón o vehículo", accept_multiple_files=True, type=['jpg', 'png', 'jpeg'])
 
         if 'presupuesto_generado' not in st.session_state:
             if st.button("💾 GENERAR PDF Y GUARDAR", type="primary", use_container_width=True):
-                correlativo = obtener_y_registrar_correlativo(c_tip, c_cli, c_mar, c_mod, c_ano, st.session_state.patente_confirmada, c_pag, format_clp(total_final))
+                correlativo = obtener_y_registrar_correlativo(st.session_state.cliente_tipo_confirmado, c_cli, c_mar, c_mod, c_ano, st.session_state.patente_confirmada, st.session_state.pago_confirmado, format_clp(total_final))
                 st.session_state['correlativo_temp'] = correlativo
                 
-                pdf_bytes = generar_pdf_parabrisas(c_tip, c_cli, st.session_state.rut_empresa_confirmado, c_mar, c_mod, c_ano, st.session_state.patente_confirmada, c_pag, seleccion_final, total_neto, fotos_adjuntas)
+                pdf_bytes = generar_pdf_parabrisas(
+                    st.session_state.cliente_tipo_confirmado, c_cli, st.session_state.rut_empresa_confirmado,
+                    st.session_state.contacto_nombre_confirmado, st.session_state.contacto_fono_confirmado,
+                    c_mar, c_mod, c_ano, st.session_state.patente_confirmada,
+                    st.session_state.tipo_servicio_confirmado, st.session_state.dir_servicio_confirmada,
+                    st.session_state.pago_confirmado, desc_val, seleccion_final, fotos_adjuntas
+                )
                 st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Presupuesto {correlativo} - {c_mar} {c_mod}.pdf"}
                 st.rerun()
         else:
