@@ -62,9 +62,9 @@ EMPRESA_TITULAR = "Venta e Instalación de Cristales Automotrices"
 RUT_EMPRESA = "8810453-6" 
 DIRECCION = "Caupolicán 0320, Temuco" 
 
-# Tono Naranja Intenso
-COLOR_HEX = "#FF5200"
-NARANJA_PASCUAL = (255, 82, 0) 
+# Tono Naranja Suave y Moderno
+COLOR_HEX = "#ff6c15"
+NARANJA_PASCUAL = (255, 108, 21) 
 
 # Inyectamos CSS para pintar la App de Naranjo
 st.markdown(f"""
@@ -80,8 +80,8 @@ st.markdown(f"""
         font-weight: bold;
     }}
     .stButton > button[kind="primary"]:hover {{
-        background-color: #E04800 !important;
-        border-color: #E04800 !important;
+        background-color: #E65A0D !important; /* Un poco más oscuro para el hover */
+        border-color: #E65A0D !important;
     }}
     
     .stTabs [aria-selected="true"] {{ background-color: {COLOR_HEX} !important; color: white !important; border-radius: 4px;}}
@@ -92,6 +92,7 @@ st.markdown(f"""
 LISTA_ASEGURADORAS = ["--- Seleccione Compañía ---", "BCI Seguros", "Liberty Seguros", "Mapfre", "HDI Seguros", "Consorcio", "Chilena Consolidada", "Reale Seguros", "Sura", "Zenit", "Unnio", "Otra..."]
 LISTA_MARCAS = ["--- Seleccione Marca ---", "Audi", "BMW", "Chery", "Chevrolet", "Changan", "Citroën", "Dodge", "Dongfeng", "Fiat", "Ford", "Foton", "Great Wall", "Honda", "Hyundai", "JAC", "Jeep", "Kia", "Maxus", "Mazda", "Mercedes-Benz", "MG", "Mitsubishi", "Nissan", "Peugeot", "Renault", "SsangYong", "Subaru", "Suzuki", "Toyota", "Volkswagen", "Volvo", "Otra..."]
 LISTA_ANOS = list(range(datetime.now().year + 1, 1989, -1))
+
 LISTA_PAGOS = ["--- Seleccione ---", "Orden de Compra (Empresas)", "Transferencia Electrónica", "Contado / Efectivo", "Tarjeta Crédito / Débito", "Pago de Deducible (Seguros)"]
 
 def format_clp(value):
@@ -131,17 +132,15 @@ class PDF(FPDF):
         
         self.set_xy(130, 20)
         self.set_font('Arial', '', 10)
-        # La fecha se dibuja, el borde sigue siendo NARANJO
         self.cell(70, 8, f"Fecha Emisión: {datetime.now().strftime('%d/%m/%Y')}", 1, 1, 'C')
-        
-        # AHORA SI, reseteamos el borde a negro después de haber dibujado ambos cuadros
-        self.set_draw_color(0, 0, 0)
+        self.set_draw_color(0, 0, 0) # Resetea borde a negro
 
         # Logo a la izquierda
         logo_footer = encontrar_imagen("logo") 
         if logo_footer: 
             self.image(logo_footer, x=10, y=8, w=40)
 
+        # Textos movidos a X=52
         self.set_xy(52, 10)
         self.set_font('Arial', 'B', 12) 
         self.cell(75, 5, EMPRESA_NOMBRE, 0, 1, 'L')
@@ -247,7 +246,7 @@ def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, contacto_n
     bruto = subtotal + iva
 
     pdf.ln(2)
-    # Totales alineados a X=130
+    # Totales alineados a X=130 - SOLUCIONADO EL BORDE DOBLE (ahora todo es negro estándar)
     pdf.set_x(130); pdf.cell(40, 6, "Total Neto:", 1, 0, 'L'); pdf.cell(30, 6, format_clp(total_neto), 1, 1, 'R')
     
     if descuento_pct > 0:
@@ -257,11 +256,8 @@ def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, contacto_n
     pdf.set_x(130); pdf.cell(40, 6, "IVA (19%):", 1, 0, 'L'); pdf.cell(30, 6, format_clp(iva), 1, 1, 'R')
     
     pdf.set_font('Arial', 'B', 10); pdf.set_x(130)
-    pdf.set_text_color(0, 0, 0) # TEXTO NEGRO
-    pdf.set_draw_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
-    # Borde naranja, texto negro
+    # Borde y texto netamente negros para que coincida con la caja superior
     pdf.cell(40, 8, "TOTAL A PAGAR:", 1, 0, 'L'); pdf.cell(30, 8, format_clp(bruto), 1, 1, 'R')
-    pdf.set_draw_color(0, 0, 0) # reset
 
     # Condiciones Comerciales
     pdf.ln(12)
