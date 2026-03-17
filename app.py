@@ -59,10 +59,10 @@ def obtener_y_registrar_correlativo(cliente_tipo, cliente_nombre, marca, modelo,
 # ==========================================
 EMPRESA_NOMBRE = "PASCUAL PARABRISAS"
 EMPRESA_TITULAR = "Venta e Instalación de Cristales Automotrices"
-RUT_EMPRESA = "76.XXX.XXX-X" # Reemplazar con el RUT real
-DIRECCION = "Caupolicán 098 y Caupolicán 320, Temuco" 
+RUT_EMPRESA = "8810453-6" 
+DIRECCION = "Caupolicán 0320, Temuco" 
 
-# Tono Naranja Intenso solicitado
+# Tono Naranja Intenso
 COLOR_HEX = "#FF5200"
 NARANJA_PASCUAL = (255, 82, 0) 
 
@@ -92,7 +92,9 @@ st.markdown(f"""
 LISTA_ASEGURADORAS = ["--- Seleccione Compañía ---", "BCI Seguros", "Liberty Seguros", "Mapfre", "HDI Seguros", "Consorcio", "Chilena Consolidada", "Reale Seguros", "Sura", "Zenit", "Unnio", "Otra..."]
 LISTA_MARCAS = ["--- Seleccione Marca ---", "Audi", "BMW", "Chery", "Chevrolet", "Changan", "Citroën", "Dodge", "Dongfeng", "Fiat", "Ford", "Foton", "Great Wall", "Honda", "Hyundai", "JAC", "Jeep", "Kia", "Maxus", "Mazda", "Mercedes-Benz", "MG", "Mitsubishi", "Nissan", "Peugeot", "Renault", "SsangYong", "Subaru", "Suzuki", "Toyota", "Volkswagen", "Volvo", "Otra..."]
 LISTA_ANOS = list(range(datetime.now().year + 1, 1989, -1))
-LISTA_PAGOS = ["--- Seleccione ---", "Orden de Compra (Empresas/Kaufmann)", "Transferencia Electrónica", "Contado / Efectivo", "Tarjeta Crédito / Débito", "Pago de Deducible (Seguros)"]
+
+# Modificado para no mencionar a Kaufmann de forma explícita
+LISTA_PAGOS = ["--- Seleccione ---", "Orden de Compra (Empresas)", "Transferencia Electrónica", "Contado / Efectivo", "Tarjeta Crédito / Débito", "Pago de Deducible (Seguros)"]
 
 def format_clp(value):
     try: return f"${float(value):,.0f}".replace(",", ".")
@@ -120,34 +122,40 @@ class PDF(FPDF):
         self.correlativo = correlativo
 
     def header(self):
-        # Cuadro Presupuesto (Borde Naranja, TEXTO NEGRO)
+        # Cuadro Presupuesto a la derecha (x=130)
         self.set_xy(130, 10)
         self.set_font('Arial', 'B', 14)
-        self.set_text_color(0, 0, 0) # Negro
+        self.set_text_color(0, 0, 0) # Texto Negro
         self.set_draw_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
         titulo = "PRESUPUESTO"
         if self.correlativo and self.correlativo != "BORRADOR": titulo += f" N° {self.correlativo}"
         self.cell(70, 10, titulo, 1, 1, 'C')
-        self.set_draw_color(0, 0, 0) # Resetea borde a negro
+        self.set_draw_color(0, 0, 0)
         
         self.set_xy(130, 20)
         self.set_font('Arial', '', 10)
         self.cell(70, 8, f"Fecha Emisión: {datetime.now().strftime('%d/%m/%Y')}", 1, 1, 'C')
 
-        # Logo a la izquierda
+        # Logo a la izquierda (Ajuste inteligente de proporción)
         logo_footer = encontrar_imagen("logo") 
-        if logo_footer: self.image(logo_footer, x=10, y=8, w=40) # w=40 da buen tamaño al logo
+        if logo_footer: 
+            self.image(logo_footer, x=10, y=8, w=40)
 
-        # Textos movidos a X=55 para que no choquen con el logo
-        self.set_xy(55, 10)
-        self.set_font('Arial', 'B', 14) 
-        self.cell(115, 6, EMPRESA_NOMBRE, 0, 1, 'L')
-        self.set_font('Arial', '', 8) # Letra 8 para que quepa todo perfecto
-        self.set_x(55); self.cell(115, 4, EMPRESA_TITULAR, 0, 1, 'L')
-        self.set_x(55); self.cell(115, 4, f"RUT: {RUT_EMPRESA} | Dirección: {DIRECCION}", 0, 1, 'L')
-        self.set_x(55); self.cell(115, 4, "Contacto: Ana María Riquelme | +56944918018 | ejecutivapascual@gmail.com", 0, 1, 'L')
-        self.set_x(55); self.cell(115, 4, "Gerencia: Gonzalo Pascual J. | pascualparabrisas@hotmail.com", 0, 1, 'L')
-        self.ln(12)
+        # Textos movidos a X=52 para no chocar con el logo. 
+        # Ancho (w) limitado a 75 para que no cruce hacia la caja de Presupuesto.
+        self.set_xy(52, 10)
+        self.set_font('Arial', 'B', 12) 
+        self.cell(75, 5, EMPRESA_NOMBRE, 0, 1, 'L')
+        
+        self.set_font('Arial', '', 8)
+        self.set_x(52); self.cell(75, 4, EMPRESA_TITULAR, 0, 1, 'L')
+        self.set_x(52); self.cell(75, 4, f"RUT: {RUT_EMPRESA} | Dir: {DIRECCION}", 0, 1, 'L')
+        
+        # Correos y contactos separados para que no hagan salto de línea feo
+        self.set_x(52); self.cell(75, 4, "Contacto: Ana María Riquelme | +56 9 4491 8018", 0, 1, 'L')
+        self.set_x(52); self.cell(75, 4, "Email: ejecutivapascual@gmail.com", 0, 1, 'L')
+        self.set_x(52); self.cell(75, 4, "Dueño: Gonzalo Pascual J. | pascualparabrisas@hotmail.com", 0, 1, 'L')
+        self.ln(8)
 
     def footer(self):
         self.set_y(-20)
@@ -253,9 +261,8 @@ def generar_pdf_parabrisas(cliente_tipo, cliente_nombre, rut_empresa, contacto_n
     pdf.set_font('Arial', 'B', 10); pdf.set_x(130)
     pdf.set_text_color(0, 0, 0) # TEXTO NEGRO
     pdf.set_draw_color(NARANJA_PASCUAL[0], NARANJA_PASCUAL[1], NARANJA_PASCUAL[2])
-    # Borde naranja, texto negro
     pdf.cell(40, 8, "TOTAL A PAGAR:", 1, 0, 'L'); pdf.cell(30, 8, format_clp(bruto), 1, 1, 'R')
-    pdf.set_draw_color(0, 0, 0) # reset
+    pdf.set_draw_color(0, 0, 0) 
 
     # Condiciones Comerciales
     pdf.ln(12)
@@ -329,7 +336,7 @@ if st.session_state.paso_actual == 1:
             cliente_final = st.selectbox("Compañía de Seguros", LISTA_ASEGURADORAS)
         elif cliente_tipo == "Empresa":
             c_e1, c_e2 = st.columns([3, 1])
-            cliente_final = c_e1.text_input("Nombre de la Empresa", placeholder="Ej: Transportes Garmendia, Kaufmann...")
+            cliente_final = c_e1.text_input("Nombre de la Empresa", placeholder="Ej: Transportes Garmendia, MOP...")
             rut_empresa = c_e2.text_input("RUT Empresa", placeholder="Ej: 77.123.456-7")
         else:
             cliente_final = st.text_input("Nombre del Cliente Particular", placeholder="Ej: Juan Pérez")
