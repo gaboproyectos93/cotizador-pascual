@@ -66,10 +66,9 @@ DIRECCION = "Caupolicán 0320, Temuco"
 COLOR_HEX = "#ff6c15"
 NARANJA_PASCUAL = (255, 108, 21) 
 
-# Inyectamos CSS para pintar la App de Naranjo y hacerla MARCA BLANCA
+# Inyectamos CSS para pintar la App de Naranjo
 st.markdown(f"""
 <style>
-    /* 1. ESTILOS DE LA INTERFAZ */
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 5px; }}
     div[data-testid="stNumberInput"] input {{ max-width: 150px; text-align: center; }}
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
@@ -89,15 +88,21 @@ st.markdown(f"""
     div[data-testid="stRadio"] > label {{ font-weight: bold; color: {COLOR_HEX}; }}
 
     /* =========================================
-       2. MODO MARCA BLANCA (Ocultar Streamlit)
+       2. MODO MARCA BLANCA (ULTRA AGRESIVO)
        ========================================= */
-    #MainMenu {{ visibility: hidden; }} /* Oculta el menú de los 3 puntitos */
-    footer {{ visibility: hidden; }}    /* Oculta el 'Made with Streamlit' abajo */
-    header {{ visibility: hidden; }}    /* Oculta la barra superior blanca */
+    #MainMenu {{ visibility: hidden !important; }}
+    footer {{ display: none !important; }}
+    header {{ display: none !important; }}
     
-    /* Oculta el botón de Deploy y el perfil del creador de la esquina */
-    .stDeployButton {{ display: none; visibility: hidden; }}
-    div[data-testid="stAppViewContainer"] > header {{ display: none; visibility: hidden; }}
+    /* Ocultar botones flotantes de Cloud (Corona y Logo) */
+    .stDeployButton {{ display: none !important; }}
+    div[data-testid="stToolbar"] {{ display: none !important; }}
+    div[data-testid="stDecoration"] {{ display: none !important; }}
+    div[data-testid="stStatusWidget"] {{ display: none !important; }}
+    
+    /* Clases dinámicas del viewer badge de Streamlit */
+    div[class^="viewerBadge"] {{ display: none !important; }}
+    #st-cloud-logo {{ display: none !important; }}
 </style>
 """, unsafe_allow_html=True)
 
