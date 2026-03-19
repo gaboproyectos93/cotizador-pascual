@@ -66,9 +66,10 @@ DIRECCION = "Caupolicán 0320, Temuco"
 COLOR_HEX = "#ff6c15"
 NARANJA_PASCUAL = (255, 108, 21) 
 
-# Inyectamos CSS para pintar la App de Naranjo
+# Inyectamos CSS para pintar la App de Naranjo y hacerla MARCA BLANCA
 st.markdown(f"""
 <style>
+    /* 1. ESTILOS DE LA INTERFAZ */
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 5px; }}
     div[data-testid="stNumberInput"] input {{ max-width: 150px; text-align: center; }}
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
@@ -80,12 +81,23 @@ st.markdown(f"""
         font-weight: bold;
     }}
     .stButton > button[kind="primary"]:hover {{
-        background-color: #E65A0D !important; /* Un poco más oscuro para el hover */
+        background-color: #E65A0D !important;
         border-color: #E65A0D !important;
     }}
     
     .stTabs [aria-selected="true"] {{ background-color: {COLOR_HEX} !important; color: white !important; border-radius: 4px;}}
     div[data-testid="stRadio"] > label {{ font-weight: bold; color: {COLOR_HEX}; }}
+
+    /* =========================================
+       2. MODO MARCA BLANCA (Ocultar Streamlit)
+       ========================================= */
+    #MainMenu {{ visibility: hidden; }} /* Oculta el menú de los 3 puntitos */
+    footer {{ visibility: hidden; }}    /* Oculta el 'Made with Streamlit' abajo */
+    header {{ visibility: hidden; }}    /* Oculta la barra superior blanca */
+    
+    /* Oculta el botón de Deploy y el perfil del creador de la esquina */
+    .stDeployButton {{ display: none; visibility: hidden; }}
+    div[data-testid="stAppViewContainer"] > header {{ display: none; visibility: hidden; }}
 </style>
 """, unsafe_allow_html=True)
 
