@@ -80,29 +80,12 @@ st.markdown(f"""
         font-weight: bold;
     }}
     .stButton > button[kind="primary"]:hover {{
-        background-color: #E65A0D !important;
+        background-color: #E65A0D !important; /* Un poco más oscuro para el hover */
         border-color: #E65A0D !important;
     }}
     
     .stTabs [aria-selected="true"] {{ background-color: {COLOR_HEX} !important; color: white !important; border-radius: 4px;}}
     div[data-testid="stRadio"] > label {{ font-weight: bold; color: {COLOR_HEX}; }}
-
-    /* =========================================
-       2. MODO MARCA BLANCA (ULTRA AGRESIVO)
-       ========================================= */
-    #MainMenu {{ visibility: hidden !important; }}
-    footer {{ display: none !important; }}
-    header {{ display: none !important; }}
-    
-    /* Ocultar botones flotantes de Cloud (Corona y Logo) */
-    .stDeployButton {{ display: none !important; }}
-    div[data-testid="stToolbar"] {{ display: none !important; }}
-    div[data-testid="stDecoration"] {{ display: none !important; }}
-    div[data-testid="stStatusWidget"] {{ display: none !important; }}
-    
-    /* Clases dinámicas del viewer badge de Streamlit */
-    div[class^="viewerBadge"] {{ display: none !important; }}
-    #st-cloud-logo {{ display: none !important; }}
 </style>
 """, unsafe_allow_html=True)
 
