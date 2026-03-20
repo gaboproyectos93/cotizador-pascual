@@ -90,7 +90,6 @@ def guardar_cliente_nuevo(rut, nombre, direccion, ciudad, comuna, giro, fono):
                 st.cache_data.clear() 
         except Exception: pass
 
-# --- NUEVAS FUNCIONES DE EDICIÓN Y BORRADO DE CLIENTES ---
 def actualizar_cliente(rut_original, nuevos_datos):
     client = conectar_google_sheets()
     if client:
@@ -101,8 +100,7 @@ def actualizar_cliente(rut_original, nuevos_datos):
             if cell:
                 row = cell.row
                 cell_list = ws.range(f'A{row}:G{row}')
-                for i, c in enumerate(cell_list):
-                    c.value = nuevos_datos[i]
+                for i, c in enumerate(cell_list): c.value = nuevos_datos[i]
                 ws.update_cells(cell_list)
                 st.cache_data.clear()
         except Exception: pass
@@ -166,6 +164,7 @@ st.markdown(f"""
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     .stButton > button[kind="primary"] {{ background-color: {COLOR_HEX} !important; border-color: {COLOR_HEX} !important; color: white !important; font-weight: bold; padding: 10px; }}
     .stButton > button[kind="primary"]:hover {{ background-color: #E65A0D !important; border-color: #E65A0D !important; }}
+    /* Eliminamos el menú por defecto de Streamlit */
     #MainMenu {{ visibility: hidden !important; }} footer {{ display: none !important; }} header {{ display: none !important; }}
 </style>
 """, unsafe_allow_html=True)
@@ -187,7 +186,7 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 4. CLASE PDF
+# 4. CLASE PDF (FORMATO OPEN TPV)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -292,49 +291,6 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
 # ==========================================
 # 5. UI PRINCIPAL (FLUJO PASO A PASO)
 # ==========================================
-with st.sidebar:
-    logo_app = encontrar_imagen("logo") 
-    if logo_app: st.image(logo_app, use_container_width=True)
-    st.markdown("## 🪟 Pascual Parabrisas")
-    st.markdown("---")
-    if st.button("🗑️ Nueva Cotización", type="primary", use_container_width=True): reset_session()
-    
-    # --- MÓDULO DE ADMINISTRACIÓN DE CLIENTES ---
-    st.divider()
-    with st.expander("👥 Administrar Clientes"):
-        st.caption("Modifica o elimina clientes guardados en la base de datos.")
-        clientes_guardados = obtener_clientes()
-        if clientes_guardados:
-            opciones_admin = [f"{c['RUT']} | {c['Nombre']}" for c in clientes_guardados]
-            cliente_sel = st.selectbox("Seleccionar Cliente:", opciones_admin, key="admin_cli")
-            
-            rut_sel = cliente_sel.split(" | ")[0]
-            datos_cli = next((c for c in clientes_guardados if str(c['RUT']) == rut_sel), None)
-            
-            if datos_cli:
-                n_rut = st.text_input("RUT", value=str(datos_cli['RUT']), key="e_rut")
-                n_nom = st.text_input("Razón Social", value=str(datos_cli['Nombre']), key="e_nom")
-                n_dir = st.text_input("Dirección", value=str(datos_cli['Direccion']), key="e_dir")
-                n_ciu = st.text_input("Ciudad", value=str(datos_cli['Ciudad']), key="e_ciu")
-                n_com = st.text_input("Comuna", value=str(datos_cli['Comuna']), key="e_com")
-                n_gir = st.text_input("Giro", value=str(datos_cli['Giro']), key="e_gir")
-                n_fon = st.text_input("Teléfono", value=str(datos_cli['Fono']), key="e_fon")
-                
-                col_ed1, col_ed2 = st.columns(2)
-                if col_ed1.button("💾 Guardar", use_container_width=True):
-                    rut_fmt = formato_rut_chileno(n_rut)
-                    actualizar_cliente(rut_sel, [rut_fmt, n_nom.upper(), n_dir.upper(), n_ciu.upper(), n_com.upper(), n_gir.upper(), n_fon])
-                    st.success("Actualizado")
-                    time.sleep(1)
-                    st.rerun()
-                if col_ed2.button("🗑️ Eliminar", use_container_width=True):
-                    eliminar_cliente(rut_sel)
-                    st.success("Eliminado")
-                    time.sleep(1)
-                    st.rerun()
-        else:
-            st.info("Aún no hay clientes en la base de datos.")
-
 if 'check_borrador' not in st.session_state:
     st.session_state.check_borrador = True
     borrador_recuperado = cargar_borrador_nube()
@@ -343,9 +299,21 @@ if 'check_borrador' not in st.session_state:
 
 if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 
-if st.session_state.paso_actual == 1:
-    col_centro = st.columns([1, 2, 1])
-    with col_centro[1]:
+col_centro = st.columns([1, 2, 1])
+
+# --- CABECERA PRINCIPAL (Visible en todos los pasos) ---
+with col_centro[1]:
+    c_logo, c_btn = st.columns([3, 1], vertical_alignment="center")
+    with c_logo:
+        logo_app = encontrar_imagen("logo") 
+        if logo_app: st.image(logo_app, width=200)
+        else: st.title("🪟 Pascual Parabrisas")
+    with c_btn:
+        if st.button("🗑️ Nueva Cotización", type="primary", use_container_width=True): reset_session()
+    st.markdown("---")
+
+    # --- PASO 1: DATOS DEL CLIENTE Y CRM ---
+    if st.session_state.paso_actual == 1:
         if 'borrador_pendiente' in st.session_state:
             st.error(f"⚠️ ¡ATENCIÓN! Tienes una cotización en pausa para **{st.session_state.borrador_pendiente.get('cliente_confirmado', 'Cliente')}**.")
             ca, cb = st.columns(2)
@@ -356,8 +324,6 @@ if st.session_state.paso_actual == 1:
                 limpiar_borrador_nube(); del st.session_state['borrador_pendiente']; st.rerun()
             st.markdown("---")
 
-        st.title("Cotizador Comercial")
-        
         st.markdown("#### Búsqueda Rápida de Clientes")
         clientes_db = obtener_clientes()
         opciones_cli = ["--- Nuevo Cliente ---"] + [f"{c['RUT']} | {c['Nombre']}" for c in clientes_db]
@@ -409,86 +375,117 @@ if st.session_state.paso_actual == 1:
                 guardar_borrador_nube() 
                 st.rerun()
 
-elif st.session_state.paso_actual == 2:
-    if 'items_productos' not in st.session_state: st.session_state.items_productos = []
-    if 'items_servicios' not in st.session_state: st.session_state.items_servicios = []
-    
-    c1, c2 = st.columns([1, 5])
-    with c1: 
-        if st.button("⬅️ Volver"): st.session_state.paso_actual = 1; st.rerun()
-    with c2: st.markdown(f"### Cliente: **{st.session_state.get('cliente_confirmado', '')}**")
-    st.markdown(f"**RUT:** {st.session_state.get('rut_confirmado', '')}") 
-    st.markdown("---")
-    
-    tab1, tab2 = st.tabs(["📦 Productos y Repuestos", "🔧 Mano de Obra"])
-    
-    with tab1:
-        st.markdown("Agrega parabrisas, gomas, poliuretanos, etc.")
-        with st.container():
-            col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
-            d_p = col_p1.text_input("Descripción del Producto", placeholder="Ej: Parabrisas Changan...")
-            q_p = col_p2.number_input("Cant.", min_value=1, value=1, key="q_prod")
-            p_p = col_p3.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_prod")
-            
-            if st.button("➕ Agregar Producto"):
-                if d_p and p_p > 0:
-                    st.session_state.items_productos.append({"Descripción": d_p, "Cantidad": q_p, "Unitario": p_p, "Total": p_p * q_p})
-                    guardar_borrador_nube(); st.rerun()
-        
-        if st.session_state.items_productos:
-            for item in st.session_state.items_productos: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
-            if st.button("🗑️ Borrar Productos"): st.session_state.items_productos = []; guardar_borrador_nube(); st.rerun()
-
-    with tab2:
-        st.markdown("Agrega servicios de instalación, sellado, reparaciones, etc.")
-        with st.container():
-            col_s1, col_s2, col_s3 = st.columns([3, 1, 1])
-            d_s = col_s1.text_input("Descripción del Servicio", placeholder="Ej: Instalación en Terreno...")
-            q_s = col_s2.number_input("Cant.", min_value=1, value=1, key="q_serv")
-            p_s = col_s3.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_serv")
-            
-            if st.button("➕ Agregar Servicio"):
-                if d_s and p_s > 0:
-                    st.session_state.items_servicios.append({"Descripción": d_s, "Cantidad": q_s, "Unitario": p_s, "Total": p_s * q_s})
-                    guardar_borrador_nube(); st.rerun()
-                    
-        if st.session_state.items_servicios:
-            for item in st.session_state.items_servicios: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
-            if st.button("🗑️ Borrar Servicios"): st.session_state.items_servicios = []; guardar_borrador_nube(); st.rerun()
-
-    total_prod = sum(x['Total'] for x in st.session_state.items_productos)
-    total_serv = sum(x['Total'] for x in st.session_state.items_servicios)
-    total_bruto = total_prod + total_serv
-
-    if total_bruto > 0:
+        # --- MÓDULO DE ADMINISTRACIÓN DE CLIENTES (FUERA DEL SIDEBAR) ---
         st.markdown("---")
-        st.subheader(f"📊 TOTAL COTIZACIÓN: {format_clp(total_bruto)}")
+        with st.expander("⚙️ Administrar Base de Datos de Clientes"):
+            st.caption("Modifica o elimina clientes guardados.")
+            if clientes_db:
+                cliente_sel_admin = st.selectbox("Seleccionar Cliente a Editar:", opciones_cli[1:], key="admin_cli")
+                rut_sel_admin = cliente_sel_admin.split(" | ")[0]
+                datos_cli_admin = next((c for c in clientes_db if str(c['RUT']) == rut_sel_admin), None)
+                
+                if datos_cli_admin:
+                    n_rut = st.text_input("RUT", value=str(datos_cli_admin['RUT']), key="e_rut")
+                    n_nom = st.text_input("Razón Social", value=str(datos_cli_admin['Nombre']), key="e_nom")
+                    n_dir = st.text_input("Dirección", value=str(datos_cli_admin['Direccion']), key="e_dir")
+                    n_ciu = st.text_input("Ciudad", value=str(datos_cli_admin['Ciudad']), key="e_ciu")
+                    n_com = st.text_input("Comuna", value=str(datos_cli_admin['Comuna']), key="e_com")
+                    n_gir = st.text_input("Giro", value=str(datos_cli_admin['Giro']), key="e_gir")
+                    n_fon = st.text_input("Teléfono", value=str(datos_cli_admin['Fono']), key="e_fon")
+                    
+                    col_ed1, col_ed2 = st.columns(2)
+                    if col_ed1.button("💾 Guardar Cambios", use_container_width=True):
+                        rut_fmt = formato_rut_chileno(n_rut)
+                        actualizar_cliente(rut_sel_admin, [rut_fmt, n_nom.upper(), n_dir.upper(), n_ciu.upper(), n_com.upper(), n_gir.upper(), n_fon])
+                        st.success("✅ Cliente actualizado.")
+                        time.sleep(1); st.rerun()
+                    if col_ed2.button("🗑️ Eliminar Cliente", use_container_width=True):
+                        eliminar_cliente(rut_sel_admin)
+                        st.success("✅ Cliente eliminado.")
+                        time.sleep(1); st.rerun()
+            else:
+                st.info("Aún no hay clientes en la base de datos.")
 
-        if 'presupuesto_generado' not in st.session_state:
-            if st.button("💾 GENERAR COTIZACIÓN", type="primary", use_container_width=True):
+    # --- PASO 2: PRODUCTOS Y MANO DE OBRA ---
+    elif st.session_state.paso_actual == 2:
+        if 'items_productos' not in st.session_state: st.session_state.items_productos = []
+        if 'items_servicios' not in st.session_state: st.session_state.items_servicios = []
+        
+        c1, c2 = st.columns([1, 4])
+        with c1: 
+            if st.button("⬅️ Volver", use_container_width=True): st.session_state.paso_actual = 1; st.rerun()
+        with c2: 
+            st.markdown(f"**Cliente:** {st.session_state.get('cliente_confirmado', '')}")
+            st.markdown(f"**RUT:** {st.session_state.get('rut_confirmado', '')}") 
+        st.markdown("---")
+        
+        tab1, tab2 = st.tabs(["📦 Productos", "🔧 Servicios"])
+        
+        with tab1:
+            with st.container():
+                col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
+                d_p = col_p1.text_input("Descripción del Producto", placeholder="Ej: Parabrisas...")
+                q_p = col_p2.number_input("Cant.", min_value=1, value=1, key="q_prod")
+                p_p = col_p3.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_prod")
                 
-                guardar_cliente_nuevo(
-                    st.session_state.get('rut_confirmado', ''), st.session_state.get('cliente_confirmado', ''), 
-                    st.session_state.get('dir_confirmada', ''), st.session_state.get('ciudad_confirmada', ''), 
-                    st.session_state.get('comuna_confirmada', ''), st.session_state.get('giro_confirmado', ''), 
-                    st.session_state.get('fono_confirmado', '')
-                )
+                if st.button("➕ Agregar Producto", use_container_width=True):
+                    if d_p and p_p > 0:
+                        st.session_state.items_productos.append({"Descripción": d_p, "Cantidad": q_p, "Unitario": p_p, "Total": p_p * q_p})
+                        guardar_borrador_nube(); st.rerun()
+            
+            if st.session_state.items_productos:
+                for item in st.session_state.items_productos: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
+                if st.button("🗑️ Borrar Productos"): st.session_state.items_productos = []; guardar_borrador_nube(); st.rerun()
+
+        with tab2:
+            with st.container():
+                col_s1, col_s2, col_s3 = st.columns([3, 1, 1])
+                d_s = col_s1.text_input("Descripción del Servicio", placeholder="Ej: Instalación...")
+                q_s = col_s2.number_input("Cant.", min_value=1, value=1, key="q_serv")
+                p_s = col_s3.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_serv")
                 
-                correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_bruto))
-                st.session_state['correlativo_temp'] = correlativo
-                
-                datos_cliente = {
-                    "nombre": st.session_state.get('cliente_confirmado', ''), "rut": st.session_state.get('rut_confirmado', ''),
-                    "direccion": st.session_state.get('dir_confirmada', ''), "ciudad": st.session_state.get('ciudad_confirmada', ''),
-                    "comuna": st.session_state.get('comuna_confirmada', ''), "giro": st.session_state.get('giro_confirmado', ''),
-                    "fono": st.session_state.get('fono_confirmado', ''), "pago": st.session_state.get('pago_confirmado', '')
-                }
-                
-                pdf_bytes = generar_pdf_pascual(datos_cliente, st.session_state.items_productos, st.session_state.items_servicios)
-                st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.get('cliente_confirmado', 'CLIENTE')}.pdf"}
-                limpiar_borrador_nube() 
-                st.rerun()
-        else:
-            data = st.session_state['presupuesto_generado']
-            st.success(f"✅ Cotización N° {st.session_state.get('correlativo_temp', '')} generada.")
-            st.download_button("📥 DESCARGAR PDF", data['pdf'], data['nombre'], "application/pdf", type="primary", use_container_width=True)
+                if st.button("➕ Agregar Servicio", use_container_width=True):
+                    if d_s and p_s > 0:
+                        st.session_state.items_servicios.append({"Descripción": d_s, "Cantidad": q_s, "Unitario": p_s, "Total": p_s * q_s})
+                        guardar_borrador_nube(); st.rerun()
+                        
+            if st.session_state.items_servicios:
+                for item in st.session_state.items_servicios: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
+                if st.button("🗑️ Borrar Servicios"): st.session_state.items_servicios = []; guardar_borrador_nube(); st.rerun()
+
+        total_prod = sum(x['Total'] for x in st.session_state.items_productos)
+        total_serv = sum(x['Total'] for x in st.session_state.items_servicios)
+        total_bruto = total_prod + total_serv
+
+        if total_bruto > 0:
+            st.markdown("---")
+            st.subheader(f"📊 TOTAL COTIZACIÓN: {format_clp(total_bruto)}")
+
+            if 'presupuesto_generado' not in st.session_state:
+                if st.button("💾 GENERAR COTIZACIÓN", type="primary", use_container_width=True):
+                    
+                    guardar_cliente_nuevo(
+                        st.session_state.get('rut_confirmado', ''), st.session_state.get('cliente_confirmado', ''), 
+                        st.session_state.get('dir_confirmada', ''), st.session_state.get('ciudad_confirmada', ''), 
+                        st.session_state.get('comuna_confirmada', ''), st.session_state.get('giro_confirmado', ''), 
+                        st.session_state.get('fono_confirmado', '')
+                    )
+                    
+                    correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_bruto))
+                    st.session_state['correlativo_temp'] = correlativo
+                    
+                    datos_cliente = {
+                        "nombre": st.session_state.get('cliente_confirmado', ''), "rut": st.session_state.get('rut_confirmado', ''),
+                        "direccion": st.session_state.get('dir_confirmada', ''), "ciudad": st.session_state.get('ciudad_confirmada', ''),
+                        "comuna": st.session_state.get('comuna_confirmada', ''), "giro": st.session_state.get('giro_confirmado', ''),
+                        "fono": st.session_state.get('fono_confirmado', ''), "pago": st.session_state.get('pago_confirmado', '')
+                    }
+                    
+                    pdf_bytes = generar_pdf_pascual(datos_cliente, st.session_state.items_productos, st.session_state.items_servicios)
+                    st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.get('cliente_confirmado', 'CLIENTE')}.pdf"}
+                    limpiar_borrador_nube() 
+                    st.rerun()
+            else:
+                data = st.session_state['presupuesto_generado']
+                st.success(f"✅ Cotización N° {st.session_state.get('correlativo_temp', '')} generada.")
+                st.download_button("📥 DESCARGAR PDF", data['pdf'], data['nombre'], "application/pdf", type="primary", use_container_width=True)
