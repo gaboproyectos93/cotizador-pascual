@@ -33,7 +33,6 @@ def conectar_google_sheets():
 # 2. RUT, CORRELATIVOS, CLIENTES Y BORRADORES
 # ==========================================
 def formato_rut_chileno(rut):
-    # Limpiamos todo lo que no sea número o K
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
     if len(rut_limpio) <= 1: return rut_limpio
     
@@ -86,10 +85,9 @@ def guardar_cliente_nuevo(rut, nombre, direccion, ciudad, comuna, giro, fono):
             sheet = client.open(NOMBRE_HOJA_GOOGLE)
             ws = sheet.worksheet("Clientes")
             records = ws.get_all_records()
-            # Si el RUT no existe en la base de datos, lo guardamos para el futuro
             if not any(str(r['RUT']).upper() == str(rut).upper() for r in records):
                 ws.append_row([rut, nombre, direccion, ciudad, comuna, giro, fono])
-                st.cache_data.clear() # Limpiamos la caché para que aparezca en la lista
+                st.cache_data.clear() 
         except Exception: pass
 
 def guardar_borrador_nube():
@@ -99,7 +97,8 @@ def guardar_borrador_nube():
         sheet = client.open(NOMBRE_HOJA_GOOGLE)
         try: ws = sheet.worksheet("Borrador")
         except: ws = sheet.add_worksheet(title="Borrador", rows="2", cols="2")
-        datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios'}
+        # CORRECCIÓN: Guardar variables tanto masculinas como femeninas
+        datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k.endswith('_confirmada') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios'}
         ws.update_acell('A1', json.dumps(datos))
     except Exception: pass
 
@@ -130,19 +129,15 @@ EMPRESA_NOMBRE = "LILY ISABEL UNDA CONTRERAS"
 EMPRESA_GIRO = "VTA, FABRIC Y REPARAC. DE PARABRISAS Y SUS ACCESORIOS"
 RUT_EMPRESA = "8.810.453-6" 
 DIRECCION = "Caupolicán 0320 - Temuco" 
-
 COLOR_HEX = "#ff6c15"
 
-# CSS Limpio: Respetará el modo oscuro o claro del usuario automáticamente.
 st.markdown(f"""
 <style>
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 10px; }}
     div[data-testid="stNumberInput"] input {{ max-width: 150px; text-align: center; font-weight: bold; }}
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
-    
     .stButton > button[kind="primary"] {{ background-color: {COLOR_HEX} !important; border-color: {COLOR_HEX} !important; color: white !important; font-weight: bold; padding: 10px; }}
     .stButton > button[kind="primary"]:hover {{ background-color: #E65A0D !important; border-color: #E65A0D !important; }}
-    
     #MainMenu {{ visibility: hidden !important; }} footer {{ display: none !important; }} header {{ display: none !important; }}
 </style>
 """, unsafe_allow_html=True)
@@ -164,7 +159,7 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 4. CLASE PDF (FORMATO CLÓNICO EXACTO)
+# 4. CLASE PDF
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -199,19 +194,19 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
     pdf.set_y(45)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Señor(es)", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente['nombre']).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Señor(es)", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Fecha Emision", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {datetime.now().strftime('%d/%m/%Y')}", 0, 1)
 
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Rut", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente['rut']).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente['fono'])}", 0, 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Rut", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente.get('fono', ''))}", 0, 1)
 
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Dirección", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente['direccion']).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Forma de Pago", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente['pago']).upper()}", 0, 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Dirección", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('direccion', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Forma de Pago", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente.get('pago', '')).upper()}", 0, 1)
 
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Ciudad", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente['ciudad']).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente['comuna']).upper()}", 0, 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Ciudad", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente.get('comuna', '')).upper()}", 0, 1)
 
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Giro", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente['giro']).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Giro", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('giro', '')).upper()}", 0, 0)
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "O/C", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, ": ", 0, 1)
     
     pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Vendedor", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, ": ANA MARIA RIQUELME", 0, 1)
@@ -284,12 +279,11 @@ if 'check_borrador' not in st.session_state:
 
 if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 
-# --- PASO 1: DATOS DEL CLIENTE Y CRM ---
 if st.session_state.paso_actual == 1:
     col_centro = st.columns([1, 2, 1])
     with col_centro[1]:
         if 'borrador_pendiente' in st.session_state:
-            st.error(f"⚠️ ¡ATENCIÓN! Tienes una cotización en pausa para **{st.session_state.borrador_pendiente.get('cliente_confirmado', '')}**.")
+            st.error(f"⚠️ ¡ATENCIÓN! Tienes una cotización en pausa para **{st.session_state.borrador_pendiente.get('cliente_confirmado', 'Cliente')}**.")
             ca, cb = st.columns(2)
             if ca.button("✅ Recuperar Trabajo", use_container_width=True):
                 for k, v in st.session_state.borrador_pendiente.items(): st.session_state[k] = v
@@ -300,13 +294,11 @@ if st.session_state.paso_actual == 1:
 
         st.title("Cotizador Comercial")
         
-        # --- MÓDULO CRM AUTOCOMPLETADO ---
         st.markdown("#### Búsqueda Rápida de Clientes")
         clientes_db = obtener_clientes()
         opciones_cli = ["--- Nuevo Cliente ---"] + [f"{c['RUT']} | {c['Nombre']}" for c in clientes_db]
         sel_cli = st.selectbox("Seleccione un cliente guardado (opcional):", opciones_cli)
         
-        # Variables por defecto
         def_nombre = ""; def_rut = ""; def_dir = ""; def_ciu = "Temuco"
         def_com = "Temuco"; def_giro = ""; def_fono = ""
 
@@ -314,12 +306,9 @@ if st.session_state.paso_actual == 1:
             rut_buscado = sel_cli.split(" | ")[0]
             cli_data = next((c for c in clientes_db if c['RUT'] == rut_buscado), None)
             if cli_data:
-                def_nombre = str(cli_data['Nombre'])
-                def_rut = str(cli_data['RUT'])
-                def_dir = str(cli_data['Direccion'])
-                def_ciu = str(cli_data['Ciudad'])
-                def_com = str(cli_data['Comuna'])
-                def_giro = str(cli_data['Giro'])
+                def_nombre = str(cli_data['Nombre']); def_rut = str(cli_data['RUT'])
+                def_dir = str(cli_data['Direccion']); def_ciu = str(cli_data['Ciudad'])
+                def_com = str(cli_data['Comuna']); def_giro = str(cli_data['Giro'])
                 def_fono = str(cli_data['Fono'])
                 st.success("✅ Datos del cliente cargados exitosamente.")
 
@@ -327,8 +316,6 @@ if st.session_state.paso_actual == 1:
         st.markdown("#### Datos de Facturación")
         c_e1, c_e2 = st.columns([3, 1])
         cliente_final = c_e1.text_input("Señor(es) / Razón Social", value=def_nombre, placeholder="Ej: Transportes Garmendia S.A.")
-        
-        # Ingreso de RUT (Se formatea automáticamente al guardar)
         rut_empresa = c_e2.text_input("RUT", value=def_rut, placeholder="Ej: 76543210-K")
         
         direccion = st.text_input("Dirección", value=def_dir, placeholder="Ej: Av. Las Industrias 123")
@@ -345,11 +332,9 @@ if st.session_state.paso_actual == 1:
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
             if not cliente_final: st.error("⛔ Falta el nombre del cliente.")
             else:
-                # AUTO-FORMATEO DE RUT
                 rut_formateado = formato_rut_chileno(rut_empresa)
-                
                 st.session_state.cliente_confirmado = cliente_final.upper()
-                st.session_state.rut_confirmado = rut_formateado.upper() # Se guarda el rut perfecto
+                st.session_state.rut_confirmado = rut_formateado.upper()
                 st.session_state.dir_confirmada = direccion.upper()
                 st.session_state.ciudad_confirmada = ciudad.upper()
                 st.session_state.comuna_confirmada = comuna.upper()
@@ -360,7 +345,6 @@ if st.session_state.paso_actual == 1:
                 guardar_borrador_nube() 
                 st.rerun()
 
-# --- PASO 2: PRODUCTOS Y MANO DE OBRA ---
 elif st.session_state.paso_actual == 2:
     if 'items_productos' not in st.session_state: st.session_state.items_productos = []
     if 'items_servicios' not in st.session_state: st.session_state.items_servicios = []
@@ -368,8 +352,8 @@ elif st.session_state.paso_actual == 2:
     c1, c2 = st.columns([1, 5])
     with c1: 
         if st.button("⬅️ Volver"): st.session_state.paso_actual = 1; st.rerun()
-    with c2: st.markdown(f"### Cliente: **{st.session_state.cliente_confirmado}**")
-    st.markdown(f"**RUT:** {st.session_state.rut_confirmado}") # Mostramos el RUT formateado para que Ana lo vea
+    with c2: st.markdown(f"### Cliente: **{st.session_state.get('cliente_confirmado', '')}**")
+    st.markdown(f"**RUT:** {st.session_state.get('rut_confirmado', '')}") 
     st.markdown("---")
     
     tab1, tab2 = st.tabs(["📦 Productos y Repuestos", "🔧 Mano de Obra"])
@@ -419,30 +403,28 @@ elif st.session_state.paso_actual == 2:
         if 'presupuesto_generado' not in st.session_state:
             if st.button("💾 GENERAR COTIZACIÓN", type="primary", use_container_width=True):
                 
-                # 1. Guardamos el cliente en el CRM si es nuevo
                 guardar_cliente_nuevo(
-                    st.session_state.rut_confirmado, st.session_state.cliente_confirmado, 
-                    st.session_state.dir_confirmada, st.session_state.ciudad_confirmada, 
-                    st.session_state.comuna_confirmada, st.session_state.giro_confirmado, 
-                    st.session_state.fono_confirmado
+                    st.session_state.get('rut_confirmado', ''), st.session_state.get('cliente_confirmado', ''), 
+                    st.session_state.get('dir_confirmada', ''), st.session_state.get('ciudad_confirmada', ''), 
+                    st.session_state.get('comuna_confirmada', ''), st.session_state.get('giro_confirmado', ''), 
+                    st.session_state.get('fono_confirmado', '')
                 )
                 
-                # 2. Generamos el correlativo y el PDF
-                correlativo = obtener_y_registrar_correlativo(st.session_state.cliente_confirmado, format_clp(total_bruto))
+                correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_bruto))
                 st.session_state['correlativo_temp'] = correlativo
                 
                 datos_cliente = {
-                    "nombre": st.session_state.cliente_confirmado, "rut": st.session_state.rut_confirmado,
-                    "direccion": st.session_state.dir_confirmada, "ciudad": st.session_state.ciudad_confirmada,
-                    "comuna": st.session_state.comuna_confirmada, "giro": st.session_state.giro_confirmado,
-                    "fono": st.session_state.fono_confirmado, "pago": st.session_state.pago_confirmado
+                    "nombre": st.session_state.get('cliente_confirmado', ''), "rut": st.session_state.get('rut_confirmado', ''),
+                    "direccion": st.session_state.get('dir_confirmada', ''), "ciudad": st.session_state.get('ciudad_confirmada', ''),
+                    "comuna": st.session_state.get('comuna_confirmada', ''), "giro": st.session_state.get('giro_confirmado', ''),
+                    "fono": st.session_state.get('fono_confirmado', ''), "pago": st.session_state.get('pago_confirmado', '')
                 }
                 
                 pdf_bytes = generar_pdf_pascual(datos_cliente, st.session_state.items_productos, st.session_state.items_servicios)
-                st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.cliente_confirmado}.pdf"}
+                st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.get('cliente_confirmado', 'CLIENTE')}.pdf"}
                 limpiar_borrador_nube() 
                 st.rerun()
         else:
             data = st.session_state['presupuesto_generado']
-            st.success(f"✅ Cotización N° {st.session_state['correlativo_temp']} generada.")
+            st.success(f"✅ Cotización N° {st.session_state.get('correlativo_temp', '')} generada.")
             st.download_button("📥 DESCARGAR PDF", data['pdf'], data['nombre'], "application/pdf", type="primary", use_container_width=True)
