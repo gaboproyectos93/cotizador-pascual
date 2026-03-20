@@ -43,7 +43,7 @@ def obtener_y_registrar_correlativo(cliente, total):
             
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
-            correlativo_str = str(1650 + numero_actual) # Empezamos cerca del 1658 de su ejemplo
+            correlativo_str = str(1650 + numero_actual)
             
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
@@ -92,10 +92,11 @@ DIRECCION = "Caupolicán 0320 - Temuco"
 
 COLOR_HEX = "#ff6c15"
 
+# --- CORRECCIÓN DE MODO OSCURO ---
 st.markdown(f"""
 <style>
-    .stApp {{ background-color: #f8f9fa; }}
-    .stContainer {{ background-color: white; border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 8px; padding: 15px; margin-bottom: 10px; }}
+    /* Eliminamos los fondos forzados para respetar el modo claro/oscuro del usuario */
+    .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 8px; padding: 15px; margin-bottom: 10px; }}
     div[data-testid="stNumberInput"] input {{ max-width: 150px; text-align: center; font-weight: bold; }}
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     
@@ -131,11 +132,9 @@ class PDF(FPDF):
         self.correlativo = correlativo
 
     def header(self):
-        # Logo
         logo_path = encontrar_imagen("logo") 
         if logo_path: self.image(logo_path, x=10, y=8, w=50)
         
-        # Datos Empresa Izquierda
         self.set_xy(10, 25)
         self.set_font('Arial', 'B', 9); self.cell(100, 4, EMPRESA_NOMBRE, 0, 1, 'L')
         self.set_font('Arial', '', 8)
@@ -143,7 +142,6 @@ class PDF(FPDF):
         self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
         self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
 
-        # Cuadro Cotización Derecha
         self.set_xy(140, 15)
         self.set_font('Arial', 'B', 16)
         self.cell(60, 8, "COTIZACIÓN", 0, 1, 'C')
@@ -160,7 +158,6 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf = PDF(correlativo=st.session_state.get('correlativo_temp', 'BORRADOR'))
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
-    # 1. BLOQUE DE DATOS DEL CLIENTE (Formato OpenTPV)
     pdf.set_y(45)
     pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Señor(es)", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente['nombre']).upper()}", 0, 0)
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Fecha Emision", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {datetime.now().strftime('%d/%m/%Y')}", 0, 1)
@@ -180,7 +177,6 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Vendedor", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, ": ANA MARIA RIQUELME", 0, 1)
     pdf.ln(5)
 
-    # 2. TABLA DE PRODUCTOS Y SERVICIOS
     pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(240, 240, 240)
     pdf.cell(100, 6, "Descripcion", 1, 0, 'L', 1)
     pdf.cell(30, 6, "Valor", 1, 0, 'R', 1)
@@ -191,7 +187,6 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf.set_font('Arial', '', 9)
     total_general = 0
 
-    # Imprimir Productos
     if productos:
         pdf.set_font('Arial', 'B', 8); pdf.cell(0, 6, "--- PRODUCTOS / REPUESTOS ---", 0, 1, 'L'); pdf.set_font('Arial', '', 9)
         for item in productos:
@@ -202,7 +197,6 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
             pdf.cell(30, 6, format_clp(item['Total']), 0, 1, 'R')
             total_general += item['Total']
             
-    # Imprimir Servicios
     if servicios:
         pdf.set_font('Arial', 'B', 8); pdf.cell(0, 6, "--- MANO DE OBRA / SERVICIOS ---", 0, 1, 'L'); pdf.set_font('Arial', '', 9)
         for item in servicios:
@@ -213,7 +207,6 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
             pdf.cell(30, 6, format_clp(item['Total']), 0, 1, 'R')
             total_general += item['Total']
 
-    # 3. CUADRO DE TOTALES (Como el PDF nuevo)
     neto = total_general / 1.19
     iva = total_general - neto
     
@@ -243,7 +236,6 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🗑️ Nueva Cotización", type="primary", use_container_width=True): reset_session()
 
-# --- VERIFICADOR DE BORRADORES AUTOMÁTICO ---
 if 'check_borrador' not in st.session_state:
     st.session_state.check_borrador = True
     borrador_recuperado = cargar_borrador_nube()
@@ -252,11 +244,9 @@ if 'check_borrador' not in st.session_state:
 
 if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 
-# --- PASO 1: DATOS DEL CLIENTE (AMPLIADO) ---
 if st.session_state.paso_actual == 1:
     col_centro = st.columns([1, 2, 1])
     with col_centro[1]:
-        # ALERTA DE BORRADOR
         if 'borrador_pendiente' in st.session_state:
             st.error(f"⚠️ ¡ATENCIÓN! Tienes una cotización en pausa para **{st.session_state.borrador_pendiente['cliente_confirmado']}**.")
             ca, cb = st.columns(2)
@@ -300,7 +290,6 @@ if st.session_state.paso_actual == 1:
                 guardar_borrador_nube() 
                 st.rerun()
 
-# --- PASO 2: PRODUCTOS Y MANO DE OBRA ---
 elif st.session_state.paso_actual == 2:
     if 'items_productos' not in st.session_state: st.session_state.items_productos = []
     if 'items_servicios' not in st.session_state: st.session_state.items_servicios = []
@@ -313,7 +302,6 @@ elif st.session_state.paso_actual == 2:
     
     tab1, tab2 = st.tabs(["📦 Productos y Repuestos", "🔧 Mano de Obra"])
     
-    # SECCIÓN 1: PRODUCTOS
     with tab1:
         st.markdown("Agrega parabrisas, gomas, poliuretanos, etc.")
         with st.container():
@@ -331,7 +319,6 @@ elif st.session_state.paso_actual == 2:
             for item in st.session_state.items_productos: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
             if st.button("🗑️ Borrar Productos"): st.session_state.items_productos = []; guardar_borrador_nube(); st.rerun()
 
-    # SECCIÓN 2: MANO DE OBRA
     with tab2:
         st.markdown("Agrega servicios de instalación, sellado, reparaciones, etc.")
         with st.container():
@@ -349,7 +336,6 @@ elif st.session_state.paso_actual == 2:
             for item in st.session_state.items_servicios: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
             if st.button("🗑️ Borrar Servicios"): st.session_state.items_servicios = []; guardar_borrador_nube(); st.rerun()
 
-    # RESUMEN Y GENERACIÓN DE PDF
     total_prod = sum(x['Total'] for x in st.session_state.items_productos)
     total_serv = sum(x['Total'] for x in st.session_state.items_servicios)
     total_bruto = total_prod + total_serv
