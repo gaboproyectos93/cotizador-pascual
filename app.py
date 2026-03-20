@@ -90,6 +90,35 @@ def guardar_cliente_nuevo(rut, nombre, direccion, ciudad, comuna, giro, fono):
                 st.cache_data.clear() 
         except Exception: pass
 
+# --- NUEVAS FUNCIONES DE EDICIÓN Y BORRADO DE CLIENTES ---
+def actualizar_cliente(rut_original, nuevos_datos):
+    client = conectar_google_sheets()
+    if client:
+        try:
+            sheet = client.open(NOMBRE_HOJA_GOOGLE)
+            ws = sheet.worksheet("Clientes")
+            cell = ws.find(rut_original, in_column=1)
+            if cell:
+                row = cell.row
+                cell_list = ws.range(f'A{row}:G{row}')
+                for i, c in enumerate(cell_list):
+                    c.value = nuevos_datos[i]
+                ws.update_cells(cell_list)
+                st.cache_data.clear()
+        except Exception: pass
+
+def eliminar_cliente(rut_original):
+    client = conectar_google_sheets()
+    if client:
+        try:
+            sheet = client.open(NOMBRE_HOJA_GOOGLE)
+            ws = sheet.worksheet("Clientes")
+            cell = ws.find(rut_original, in_column=1)
+            if cell:
+                ws.delete_rows(cell.row)
+                st.cache_data.clear()
+        except Exception: pass
+
 def guardar_borrador_nube():
     client = conectar_google_sheets()
     if not client: return
@@ -97,7 +126,6 @@ def guardar_borrador_nube():
         sheet = client.open(NOMBRE_HOJA_GOOGLE)
         try: ws = sheet.worksheet("Borrador")
         except: ws = sheet.add_worksheet(title="Borrador", rows="2", cols="2")
-        # CORRECCIÓN: Guardar variables tanto masculinas como femeninas
         datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k.endswith('_confirmada') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios'}
         ws.update_acell('A1', json.dumps(datos))
     except Exception: pass
@@ -270,6 +298,42 @@ with st.sidebar:
     st.markdown("## 🪟 Pascual Parabrisas")
     st.markdown("---")
     if st.button("🗑️ Nueva Cotización", type="primary", use_container_width=True): reset_session()
+    
+    # --- MÓDULO DE ADMINISTRACIÓN DE CLIENTES ---
+    st.divider()
+    with st.expander("👥 Administrar Clientes"):
+        st.caption("Modifica o elimina clientes guardados en la base de datos.")
+        clientes_guardados = obtener_clientes()
+        if clientes_guardados:
+            opciones_admin = [f"{c['RUT']} | {c['Nombre']}" for c in clientes_guardados]
+            cliente_sel = st.selectbox("Seleccionar Cliente:", opciones_admin, key="admin_cli")
+            
+            rut_sel = cliente_sel.split(" | ")[0]
+            datos_cli = next((c for c in clientes_guardados if str(c['RUT']) == rut_sel), None)
+            
+            if datos_cli:
+                n_rut = st.text_input("RUT", value=str(datos_cli['RUT']), key="e_rut")
+                n_nom = st.text_input("Razón Social", value=str(datos_cli['Nombre']), key="e_nom")
+                n_dir = st.text_input("Dirección", value=str(datos_cli['Direccion']), key="e_dir")
+                n_ciu = st.text_input("Ciudad", value=str(datos_cli['Ciudad']), key="e_ciu")
+                n_com = st.text_input("Comuna", value=str(datos_cli['Comuna']), key="e_com")
+                n_gir = st.text_input("Giro", value=str(datos_cli['Giro']), key="e_gir")
+                n_fon = st.text_input("Teléfono", value=str(datos_cli['Fono']), key="e_fon")
+                
+                col_ed1, col_ed2 = st.columns(2)
+                if col_ed1.button("💾 Guardar", use_container_width=True):
+                    rut_fmt = formato_rut_chileno(n_rut)
+                    actualizar_cliente(rut_sel, [rut_fmt, n_nom.upper(), n_dir.upper(), n_ciu.upper(), n_com.upper(), n_gir.upper(), n_fon])
+                    st.success("Actualizado")
+                    time.sleep(1)
+                    st.rerun()
+                if col_ed2.button("🗑️ Eliminar", use_container_width=True):
+                    eliminar_cliente(rut_sel)
+                    st.success("Eliminado")
+                    time.sleep(1)
+                    st.rerun()
+        else:
+            st.info("Aún no hay clientes en la base de datos.")
 
 if 'check_borrador' not in st.session_state:
     st.session_state.check_borrador = True
@@ -304,7 +368,7 @@ if st.session_state.paso_actual == 1:
 
         if sel_cli != "--- Nuevo Cliente ---":
             rut_buscado = sel_cli.split(" | ")[0]
-            cli_data = next((c for c in clientes_db if c['RUT'] == rut_buscado), None)
+            cli_data = next((c for c in clientes_db if str(c['RUT']) == rut_buscado), None)
             if cli_data:
                 def_nombre = str(cli_data['Nombre']); def_rut = str(cli_data['RUT'])
                 def_dir = str(cli_data['Direccion']); def_ciu = str(cli_data['Ciudad'])
