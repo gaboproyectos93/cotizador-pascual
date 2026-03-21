@@ -232,24 +232,30 @@ class PDF(FPDF):
         self.correlativo = correlativo
 
     def header(self):
+        # 1. Logo
         logo_path = encontrar_imagen("logo") 
         if logo_path: self.image(logo_path, x=10, y=8, w=50)
         
-        self.set_xy(10, 25)
+        # 2. Datos de la Empresa (Con margen ajustado hacia abajo)
+        self.set_xy(10, 40) # <-- Ajuste clave: Empieza más abajo para separarse del logo
         self.set_font('Arial', 'B', 9); self.cell(100, 4, EMPRESA_NOMBRE, 0, 1, 'L')
         self.set_font('Arial', '', 8)
         self.cell(100, 4, EMPRESA_GIRO, 0, 1, 'L')
         self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
         self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
 
-        # Cuadro Superior Derecho (Cotización)
+        # 3. Cuadro Superior Derecho Cerrado (Cotización)
         self.set_xy(140, 15)
         self.set_font('Arial', 'B', 16)
-        self.cell(60, 8, "COTIZACIÓN", 0, 1, 'C')
-        self.set_x(140); self.set_font('Arial', 'B', 14)
+        # Borde Superior, Izquierdo y Derecho ('LTR')
+        self.cell(60, 8, "COTIZACIÓN", 'LTR', 1, 'C')
+        
+        self.set_x(140)
+        self.set_font('Arial', 'B', 14)
         titulo = f"N° {self.correlativo}" if self.correlativo else "N° BORRADOR"
-        self.cell(60, 8, titulo, 0, 1, 'C')
-        self.ln(10)
+        # Borde Inferior, Izquierdo y Derecho ('LBR')
+        self.cell(60, 8, titulo, 'LBR', 1, 'C')
+        self.ln(15)
 
     def footer(self):
         self.set_y(-15); self.set_font('Arial', 'I', 8); self.set_text_color(150, 150, 150)
@@ -259,28 +265,30 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf = PDF(correlativo=st.session_state.get('correlativo_temp', 'BORRADOR'))
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
-    pdf.set_y(45)
-    
-    # --- 1. TABLA DATOS DEL CLIENTE ---
+    # --- 1. TABLA DATOS DEL CLIENTE CERRADA ---
     pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
     pdf.cell(190, 6, "  DATOS DEL CLIENTE", 1, 1, 'L', 1)
     
     pdf.set_font('Arial', 'B', 9)
-    # Fila 1
-    pdf.cell(25, 6, " Señor(es)", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
+    # Fila 1 (Suma total 190 para cerrar la tabla)
+    pdf.cell(25, 6, " Señor(es)", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
+    
     # Fila 2
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " RUT", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
-    # Fila 3
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Dirección", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('direccion', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " RUT", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
+    
+    # Fila 3 (Letra chica en forma de pago para que textos largos no desborden)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Dirección", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('direccion', '')).upper()}"[:45], 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 8); pdf.cell(50, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
+    
     # Fila 4
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Ciudad", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
-    # Fila 5
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Giro", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('giro', '')).upper()}", 'B', 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Vendedor", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, ": ANA MARIA RIQUELME", 'R,B', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Ciudad", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
+    
+    # Fila 5 (Se cierra la tabla inferior con 'B')
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Giro", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('giro', '')).upper()}"[:45], 'B', 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Vendedor", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, ": ANA MARIA RIQUELME", 'R,B', 1)
     
     pdf.ln(6)
 
@@ -295,16 +303,15 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     total_general = 0
 
     def imprimir_fila(desc, unitario, cant, total):
-        # Usamos multicell para la descripción por si el texto es muy largo
         x = pdf.get_x(); y = pdf.get_y()
         pdf.multi_cell(100, 6, desc, 1, 'L')
-        h = pdf.get_y() - y # Altura dinámica calculada
+        h = pdf.get_y() - y 
         pdf.set_xy(x + 100, y)
         pdf.cell(30, h, format_clp(unitario), 1, 0, 'R')
         pdf.cell(15, h, str(cant), 1, 0, 'C')
         pdf.cell(15, h, "$0", 1, 0, 'C')
         pdf.cell(30, h, format_clp(total), 1, 1, 'R')
-        pdf.set_xy(x, y + h) # Bajamos a la siguiente fila
+        pdf.set_xy(x, y + h)
 
     if productos:
         pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
