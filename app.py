@@ -74,14 +74,12 @@ BASE_VEHICULOS = {
 def formato_rut_chileno(rut):
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
     if len(rut_limpio) <= 1: return rut_limpio
-    
     cuerpo = rut_limpio[:-1]
     dv = rut_limpio[-1]
     try:
         cuerpo_fmt = f"{int(cuerpo):,}".replace(",", ".")
         return f"{cuerpo_fmt}-{dv}"
-    except:
-        return rut_limpio
+    except: return rut_limpio
 
 def obtener_y_registrar_correlativo(cliente, total):
     client = conectar_google_sheets()
@@ -195,6 +193,7 @@ EMPRESA_GIRO = "VTA, FABRIC Y REPARAC. DE PARABRISAS Y SUS ACCESORIOS"
 RUT_EMPRESA = "8.810.453-6" 
 DIRECCION = "Caupolicán 0320 - Temuco" 
 COLOR_HEX = "#ff6c15"
+COLOR_RGB = (255, 108, 21) # Naranja Pascual
 
 st.markdown(f"""
 <style>
@@ -224,7 +223,7 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 5. CLASE PDF (DISEÑO TABULAR ORDENADO)
+# 5. CLASE PDF (DISEÑO MODERNO MINIMALISTA)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -234,122 +233,163 @@ class PDF(FPDF):
     def header(self):
         # 1. Logo
         logo_path = encontrar_imagen("logo") 
-        if logo_path: self.image(logo_path, x=10, y=8, w=50)
+        if logo_path: self.image(logo_path, x=10, y=10, w=45)
         
-        # 2. Datos de la Empresa (Con margen ajustado hacia abajo)
-        self.set_xy(10, 40) # <-- Ajuste clave: Empieza más abajo para separarse del logo
-        self.set_font('Arial', 'B', 9); self.cell(100, 4, EMPRESA_NOMBRE, 0, 1, 'L')
-        self.set_font('Arial', '', 8)
-        self.cell(100, 4, EMPRESA_GIRO, 0, 1, 'L')
-        self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
-        self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
-
-        # 3. Cuadro Superior Derecho Cerrado (Cotización)
-        self.set_xy(140, 15)
-        self.set_font('Arial', 'B', 16)
-        # Borde Superior, Izquierdo y Derecho ('LTR')
-        self.cell(60, 8, "COTIZACIÓN", 'LTR', 1, 'C')
+        # 2. Cotización y Número (Derecha)
+        self.set_xy(110, 15)
+        self.set_font('Arial', 'B', 24)
+        self.set_text_color(*COLOR_RGB) # Naranja Pascual
+        self.cell(90, 10, "COTIZACIÓN", 0, 1, 'R')
         
-        self.set_x(140)
+        self.set_x(110)
         self.set_font('Arial', 'B', 14)
+        self.set_text_color(50, 50, 50) # Gris oscuro
         titulo = f"N° {self.correlativo}" if self.correlativo else "N° BORRADOR"
-        # Borde Inferior, Izquierdo y Derecho ('LBR')
-        self.cell(60, 8, titulo, 'LBR', 1, 'C')
-        self.ln(15)
+        self.cell(90, 8, titulo, 0, 1, 'R')
+        
+        self.set_x(110)
+        self.set_font('Arial', '', 10)
+        self.cell(90, 6, f"Fecha Emisión: {datetime.now().strftime('%d/%m/%Y')}", 0, 1, 'R')
 
     def footer(self):
-        self.set_y(-15); self.set_font('Arial', 'I', 8); self.set_text_color(150, 150, 150)
-        self.cell(0, 5, "Documento generado por Sistema Pascual Parabrisas", 0, 1, 'L')
+        # Línea de color abajo
+        self.set_y(-20)
+        self.set_fill_color(*COLOR_RGB)
+        self.rect(10, 275, 190, 2, 'F')
+        
+        self.set_y(-15)
+        self.set_font('Arial', 'B', 9)
+        self.set_text_color(80, 80, 80)
+        self.cell(70, 5, EMPRESA_NOMBRE, 0, 0, 'L')
+        self.set_font('Arial', '', 8)
+        self.cell(50, 5, f"RUT: {RUT_EMPRESA}", 0, 0, 'C')
+        self.cell(70, 5, DIRECCION, 0, 1, 'R')
 
 def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf = PDF(correlativo=st.session_state.get('correlativo_temp', 'BORRADOR'))
-    pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
+    pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=25) 
     
-    # --- 1. TABLA DATOS DEL CLIENTE CERRADA ---
-    pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
-    pdf.cell(190, 6, "  DATOS DEL CLIENTE", 1, 1, 'L', 1)
+    # --- 1. BLOQUE DE CLIENTE ESTILO MODERNO ---
+    pdf.set_y(45)
+    pdf.set_fill_color(248, 248, 248) # Fondo gris super claro
+    pdf.rect(10, 45, 190, 32, 'F')
+    pdf.set_fill_color(*COLOR_RGB) 
+    pdf.rect(10, 45, 2, 32, 'F') # Franja naranja decorativa
     
-    pdf.set_font('Arial', 'B', 9)
-    # Fila 1 (Suma total 190 para cerrar la tabla)
-    pdf.cell(25, 6, " Señor(es)", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
+    pdf.set_xy(15, 48)
     
-    # Fila 2
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " RUT", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
+    # Fila 1 (Encabezados)
+    pdf.set_font('Arial', 'B', 8); pdf.set_text_color(*COLOR_RGB)
+    pdf.cell(95, 4, "NOMBRE / RAZÓN SOCIAL:", 0, 0, 'L')
+    pdf.cell(90, 4, "RUT:", 0, 1, 'L')
+    # Fila 1 (Valores)
+    pdf.set_font('Arial', 'B', 10); pdf.set_text_color(40, 40, 40)
+    pdf.set_x(15); pdf.cell(95, 5, f"{str(datos_cliente.get('nombre', '')).upper()}", 0, 0, 'L')
+    pdf.cell(90, 5, f"{str(datos_cliente.get('rut', '')).upper()}", 0, 1, 'L')
+    pdf.ln(2)
     
-    # Fila 3 (Letra chica en forma de pago para que textos largos no desborden)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Dirección", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('direccion', '')).upper()}"[:45], 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 8); pdf.cell(50, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
+    # Fila 2 (Encabezados)
+    pdf.set_x(15); pdf.set_font('Arial', 'B', 8); pdf.set_text_color(*COLOR_RGB)
+    pdf.cell(95, 4, "DIRECCIÓN:", 0, 0, 'L')
+    pdf.cell(90, 4, "FORMA DE PAGO:", 0, 1, 'L')
+    # Fila 2 (Valores)
+    pdf.set_font('Arial', '', 9); pdf.set_text_color(50, 50, 50)
+    dir_full = f"{str(datos_cliente.get('direccion', ''))}, {str(datos_cliente.get('comuna', ''))}, {str(datos_cliente.get('ciudad', ''))}".upper()
+    pdf.set_x(15); pdf.cell(95, 5, dir_full[:55], 0, 0, 'L')
+    pdf.cell(90, 5, f"{str(datos_cliente.get('pago', '')).upper()}", 0, 1, 'L')
+    pdf.ln(2)
     
-    # Fila 4
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Ciudad", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
+    # Fila 3 (Encabezados)
+    pdf.set_x(15); pdf.set_font('Arial', 'B', 8); pdf.set_text_color(*COLOR_RGB)
+    pdf.cell(95, 4, "GIRO:", 0, 0, 'L')
+    pdf.cell(90, 4, "TELÉFONO:", 0, 1, 'L')
+    # Fila 3 (Valores)
+    pdf.set_font('Arial', '', 9); pdf.set_text_color(50, 50, 50)
+    pdf.set_x(15); pdf.cell(95, 5, f"{str(datos_cliente.get('giro', '')).upper()}"[:55], 0, 0, 'L')
+    pdf.cell(90, 5, f"{str(datos_cliente.get('fono', ''))}", 0, 1, 'L')
     
-    # Fila 5 (Se cierra la tabla inferior con 'B')
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Giro", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('giro', '')).upper()}"[:45], 'B', 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Vendedor", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, ": ANA MARIA RIQUELME", 'R,B', 1)
-    
-    pdf.ln(6)
+    pdf.ln(10)
 
-    # --- 2. TABLA DETALLE DE COTIZACIÓN ---
-    pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(230, 230, 230)
-    pdf.cell(100, 7, "Descripción", 1, 0, 'C', 1)
-    pdf.cell(30, 7, "Valor Unit.", 1, 0, 'C', 1)
-    pdf.cell(15, 7, "Cant.", 1, 0, 'C', 1)
-    pdf.cell(15, 7, "Desc.", 1, 0, 'C', 1)
-    pdf.cell(30, 7, "Total", 1, 1, 'C', 1)
+    # --- 2. TABLA PRINCIPAL MODERNA ---
+    pdf.set_fill_color(*COLOR_RGB) # Fondo Naranja
+    pdf.set_text_color(255, 255, 255) # Letra Blanca
+    pdf.set_font('Arial', 'B', 9)
+    pdf.cell(15, 8, "CANT.", 0, 0, 'C', 1)
+    pdf.cell(115, 8, "DESCRIPCIÓN", 0, 0, 'L', 1)
+    pdf.cell(30, 8, "P. UNIT.", 0, 0, 'R', 1)
+    pdf.cell(30, 8, "TOTAL", 0, 1, 'R', 1)
     
     total_general = 0
+    pdf.set_text_color(50, 50, 50)
+    pdf.set_font('Arial', '', 9)
+    
+    fill = False # Alternar colores de fila
 
-    def imprimir_fila(desc, unitario, cant, total):
+    def imprimir_fila(cant, desc, unit, total, is_title=False):
+        nonlocal fill
+        if is_title:
+            pdf.set_font('Arial', 'B', 8)
+            pdf.set_text_color(*COLOR_RGB)
+            pdf.cell(190, 6, desc, 0, 1, 'L')
+            pdf.set_font('Arial', '', 9)
+            pdf.set_text_color(50, 50, 50)
+            return
+            
+        pdf.set_fill_color(248, 248, 248) # Gris muy sutil para fila alterna
         x = pdf.get_x(); y = pdf.get_y()
-        pdf.multi_cell(100, 6, desc, 1, 'L')
-        h = pdf.get_y() - y 
-        pdf.set_xy(x + 100, y)
-        pdf.cell(30, h, format_clp(unitario), 1, 0, 'R')
-        pdf.cell(15, h, str(cant), 1, 0, 'C')
-        pdf.cell(15, h, "$0", 1, 0, 'C')
-        pdf.cell(30, h, format_clp(total), 1, 1, 'R')
-        pdf.set_xy(x, y + h)
+        
+        pdf.cell(15, 6, str(cant), 0, 0, 'C', fill=fill)
+        pdf.cell(115, 6, desc, 0, 0, 'L', fill=fill)
+        pdf.cell(30, 6, format_clp(unit), 0, 0, 'R', fill=fill)
+        pdf.cell(30, 6, format_clp(total), 0, 1, 'R', fill=fill)
+        fill = not fill
 
     if productos:
-        pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
-        pdf.cell(190, 5, "  PRODUCTOS / REPUESTOS", 1, 1, 'L', 1)
-        pdf.set_font('Arial', '', 9)
+        imprimir_fila("", "  --- PRODUCTOS / REPUESTOS ---", "", "", True)
         for item in productos:
-            imprimir_fila(item['Descripción'].upper(), item['Unitario'], item['Cantidad'], item['Total'])
+            imprimir_fila(item['Cantidad'], item['Descripción'].upper(), item['Unitario'], item['Total'])
             total_general += item['Total']
             
     if servicios:
-        pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
-        pdf.cell(190, 5, "  MANO DE OBRA / SERVICIOS", 1, 1, 'L', 1)
-        pdf.set_font('Arial', '', 9)
+        imprimir_fila("", "  --- MANO DE OBRA / SERVICIOS ---", "", "", True)
         for item in servicios:
-            imprimir_fila(item['Descripción'].upper(), item['Unitario'], item['Cantidad'], item['Total'])
+            imprimir_fila(item['Cantidad'], item['Descripción'].upper(), item['Unitario'], item['Total'])
             total_general += item['Total']
 
-    # --- 3. CAJA DE TOTALES TABULAR ---
+    # Línea divisoria suave
+    pdf.ln(2)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+
+    # --- 3. SECCIÓN DE TOTALES ---
     neto = total_general / 1.19
     iva = total_general - neto
     
-    pdf.ln(5)
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9)
-    pdf.cell(35, 6, "SUB TOTAL", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, format_clp(total_general), 1, 1, 'R')
+    y_totales = pdf.get_y()
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "DESCUENTO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, "$0", 1, 1, 'R')
+    # Texto Legal a la izquierda
+    pdf.set_font('Arial', 'I', 8)
+    pdf.set_text_color(120, 120, 120)
+    notas = "Condiciones comerciales:\n- Validez de la oferta: 15 días corridos.\n- Los trabajos de instalación cuentan con 3 meses de\n  garantía por filtraciones o desprendimientos.\n- Documento generado por Pascual Parabrisas."
+    pdf.multi_cell(100, 4, notas)
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "NETO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, format_clp(neto), 1, 1, 'R')
+    # Caja de Totales a la derecha
+    pdf.set_xy(120, y_totales)
+    pdf.set_font('Arial', 'B', 10)
+    pdf.set_text_color(50, 50, 50)
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "I.V.A. (19%)", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, format_clp(iva), 1, 1, 'R')
+    pdf.cell(40, 7, "SUB TOTAL:", 0, 0, 'L'); pdf.set_font('Arial', '', 10); pdf.cell(30, 7, format_clp(neto), 0, 1, 'R')
+    pdf.set_x(120)
+    pdf.set_font('Arial', 'B', 10); pdf.cell(40, 7, "I.V.A. (19%):", 0, 0, 'L'); pdf.set_font('Arial', '', 10); pdf.cell(30, 7, format_clp(iva), 0, 1, 'R')
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
-    pdf.cell(35, 8, "TOTAL", 1, 0, 'L', 1); pdf.cell(35, 8, format_clp(total_general), 1, 1, 'R', 1)
+    # Total a Pagar en Caja Naranja
+    pdf.set_x(120)
+    pdf.set_fill_color(*COLOR_RGB)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(40, 10, " TOTAL A PAGAR:", 0, 0, 'L', 1)
+    pdf.cell(30, 10, format_clp(total_general) + " ", 0, 1, 'R', 1)
 
     return pdf.output(dest='S').encode('latin-1')
 
@@ -366,7 +406,6 @@ if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 
 col_centro = st.columns([1, 2, 1])
 
-# --- CABECERA PRINCIPAL ---
 with col_centro[1]:
     c_logo, c_btn = st.columns([3, 1], vertical_alignment="center")
     with c_logo:
@@ -423,15 +462,7 @@ with col_centro[1]:
         c_f1, c_f2 = st.columns(2)
         contacto_fono = c_f1.text_input("Teléfono", value=def_fono)
         
-        opciones_pago = [
-            "Transferencia Electrónica",
-            "Efectivo / Contado",
-            "Tarjeta (Débito/Crédito)",
-            "Orden de Compra (O/C) - 30 días",
-            "Orden de Compra (O/C) - 45 días",
-            "Orden de Compra (O/C) - 60 días",
-            "Crédito Directo a 30 días"
-        ]
+        opciones_pago = ["Transferencia Electrónica", "Efectivo / Contado", "Tarjeta (Débito/Crédito)", "Orden de Compra (O/C) - 30 días", "Orden de Compra (O/C) - 45 días", "Orden de Compra (O/C) - 60 días", "Crédito Directo a 30 días"]
         condicion_pago = c_f2.selectbox("Forma de Pago", opciones_pago)
 
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
