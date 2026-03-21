@@ -164,9 +164,7 @@ st.markdown(f"""
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     .stButton > button[kind="primary"] {{ background-color: {COLOR_HEX} !important; border-color: {COLOR_HEX} !important; color: white !important; font-weight: bold; padding: 10px; }}
     .stButton > button[kind="primary"]:hover {{ background-color: #E65A0D !important; border-color: #E65A0D !important; }}
-    
-    /* Restauramos el header y el MainMenu para poder cambiar a modo oscuro */
-    footer {{ display: none !important; }} 
+    #MainMenu {{ visibility: hidden !important; }} footer {{ display: none !important; }} header {{ display: none !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -358,7 +356,18 @@ with col_centro[1]:
         
         c_f1, c_f2 = st.columns(2)
         contacto_fono = c_f1.text_input("Teléfono", value=def_fono)
-        condicion_pago = c_f2.selectbox("Forma de Pago", ["CONTADO", "CREDITO DIRECTO", "TRANSFERENCIA", "TARJETA"])
+        
+        # --- NUEVAS OPCIONES DE PAGO ---
+        opciones_pago = [
+            "Transferencia Electrónica",
+            "Efectivo / Contado",
+            "Tarjeta (Débito/Crédito)",
+            "Orden de Compra (O/C) - 30 días",
+            "Orden de Compra (O/C) - 45 días",
+            "Orden de Compra (O/C) - 60 días",
+            "Crédito Directo a 30 días"
+        ]
+        condicion_pago = c_f2.selectbox("Forma de Pago", opciones_pago)
 
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
             if not cliente_final: st.error("⛔ Falta el nombre del cliente.")
