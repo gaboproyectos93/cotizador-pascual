@@ -132,10 +132,7 @@ def obtener_clientes():
             sheet = client.open(NOMBRE_HOJA_GOOGLE)
             try: 
                 ws = sheet.worksheet("Clientes")
-                
-                # --- AUTO-REPARADOR DE BASE DE DATOS ---
                 encabezados = ws.row_values(1)
-                # Si detecta que la columna 7 no es 'Contacto' (modelo antiguo), lo repara en la nube
                 if len(encabezados) < 8 or encabezados[6] != "Contacto":
                     ws.update_acell('G1', 'Contacto')
                     ws.update_acell('H1', 'Fono')
@@ -144,13 +141,9 @@ def obtener_clientes():
                 ws.append_row(["RUT", "Nombre", "Direccion", "Ciudad", "Comuna", "Giro", "Contacto", "Fono"])
             
             registros = ws.get_all_records()
-            
-            # Limpieza dinámica en vivo
             for r in registros:
                 contacto = str(r.get('Contacto', '')).strip()
                 fono = str(r.get('Fono', '')).strip()
-                
-                # Si la casilla contacto tiene puros números (teléfono mal asignado) y fono está vacío
                 if contacto and not fono and re.match(r'^[\d\+ \-]+$', contacto):
                     r['Fono'] = contacto
                     r['Contacto'] = ""
@@ -629,7 +622,7 @@ with col_centro[1]:
             if tipo_carroceria == "Automóvil / SUV":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
-                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
+                c_f2.button("🟩 PARABRISAS", type=btn_type("PARABRISAS"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS",))
                 c_d1, c_d2, c_d3, c_d4 = st.columns(4)
                 c_d1.button("Aleta D. Izq", type=btn_type("ALETA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("ALETA DEL. IZQ.",))
                 c_d2.button("Ventana D. Izq", type=btn_type("VENTANA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("VENTANA DEL. IZQ.",))
@@ -651,7 +644,7 @@ with col_centro[1]:
             elif tipo_carroceria == "Camioneta / Pick-up":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
-                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
+                c_f2.button("🟩 PARABRISAS", type=btn_type("PARABRISAS"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS",))
                 c_d1, c_d2 = st.columns(2)
                 c_d1.button("Ventana Del. Izq", type=btn_type("VENTANA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("VENTANA DEL. IZQ.",))
                 c_d2.button("Ventana Del. Der", type=btn_type("VENTANA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("VENTANA DEL. DER.",))
@@ -672,7 +665,7 @@ with col_centro[1]:
             elif tipo_carroceria == "Furgón / Van":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
-                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
+                c_f2.button("🟩 PARABRISAS", type=btn_type("PARABRISAS"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS",))
                 
                 c_d1, c_d2, c_d3, c_d4 = st.columns(4)
                 c_d1.button("Aleta D. Izq", type=btn_type("ALETA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("ALETA DEL. IZQ.",))
@@ -695,7 +688,7 @@ with col_centro[1]:
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DE CABINA</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns(3)
                 c_f1.button("Parabrisas Izq", type=btn_type("PARABRISAS IZQUIERDO"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS IZQUIERDO",))
-                c_f2.button("Parabrisas Entero", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
+                c_f2.button("Parabrisas Entero", type=btn_type("PARABRISAS"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS",))
                 c_f3.button("Parabrisas Der", type=btn_type("PARABRISAS DERECHO"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS DERECHO",))
                 c_d1, c_d2 = st.columns(2)
                 c_d1.button("Ventana Del. Izq", type=btn_type("VENTANA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("VENTANA DEL. IZQ.",))
