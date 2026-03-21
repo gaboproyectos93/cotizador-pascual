@@ -152,7 +152,6 @@ def obtener_clientes():
         except Exception: pass
     return []
 
-# --- CORRECCIÓN MÚLTIPLES CONTACTOS: Validar por RUT Y Contacto ---
 def guardar_cliente_nuevo(rut, nombre, direccion, ciudad, comuna, giro, contacto, fono):
     client = conectar_google_sheets()
     if client:
@@ -160,47 +159,10 @@ def guardar_cliente_nuevo(rut, nombre, direccion, ciudad, comuna, giro, contacto
             sheet = client.open(NOMBRE_HOJA_GOOGLE)
             ws = sheet.worksheet("Clientes")
             records = ws.get_all_records()
-            # Guardamos un nuevo registro si esa combinación exacta de RUT y Contacto no existe
             existe = any(str(r['RUT']).upper() == str(rut).upper() and str(r.get('Contacto', '')).upper() == str(contacto).upper() for r in records)
             if not existe:
                 ws.append_row([rut, nombre, direccion, ciudad, comuna, giro, contacto, fono])
                 st.cache_data.clear() 
-        except Exception: pass
-
-def actualizar_cliente(rut_original, contacto_original, nuevos_datos):
-    client = conectar_google_sheets()
-    if client:
-        try:
-            sheet = client.open(NOMBRE_HOJA_GOOGLE)
-            ws = sheet.worksheet("Clientes")
-            records = ws.get_all_records()
-            row_num = None
-            for i, r in enumerate(records, start=2): # start=2 porque la fila 1 es el encabezado
-                if str(r['RUT']).upper() == str(rut_original).upper() and str(r.get('Contacto', '')).upper() == str(contacto_original).upper():
-                    row_num = i
-                    break
-            if row_num:
-                cell_list = ws.range(f'A{row_num}:H{row_num}')
-                for i, c in enumerate(cell_list): c.value = nuevos_datos[i]
-                ws.update_cells(cell_list)
-                st.cache_data.clear()
-        except Exception: pass
-
-def eliminar_cliente(rut_original, contacto_original):
-    client = conectar_google_sheets()
-    if client:
-        try:
-            sheet = client.open(NOMBRE_HOJA_GOOGLE)
-            ws = sheet.worksheet("Clientes")
-            records = ws.get_all_records()
-            row_num = None
-            for i, r in enumerate(records, start=2):
-                if str(r['RUT']).upper() == str(rut_original).upper() and str(r.get('Contacto', '')).upper() == str(contacto_original).upper():
-                    row_num = i
-                    break
-            if row_num:
-                ws.delete_rows(row_num)
-                st.cache_data.clear()
         except Exception: pass
 
 def guardar_borrador_nube():
@@ -483,7 +445,6 @@ with col_centro[1]:
         st.markdown("#### Búsqueda Rápida de Clientes")
         clientes_db = obtener_clientes()
         
-        # --- NUEVA LÓGICA DE AGRUPACIÓN POR RUT PARA CONTACTOS MÚLTIPLES ---
         clientes_dict = {}
         for c in clientes_db:
             rut_str = str(c['RUT']).upper()
@@ -493,7 +454,6 @@ with col_centro[1]:
                     'Ciudad': c['Ciudad'], 'Comuna': c['Comuna'], 'Giro': c['Giro'],
                     'Contactos': []
                 }
-            # Agregamos contacto asegurando que no haya duplicados
             nom_c = str(c.get('Contacto', '')).strip()
             fon_c = str(c.get('Fono', '')).strip()
             if nom_c or fon_c:
@@ -535,7 +495,6 @@ with col_centro[1]:
         
         c_f1, c_f2 = st.columns(2)
         
-        # --- SELECTOR DE CONTACTOS SI LA EMPRESA TIENE VARIOS ---
         if contactos_disponibles:
             nombres_contactos = [c['nombre'] for c in contactos_disponibles]
             sel_contacto = c_f1.selectbox("Contactos Guardados:", ["--- Escribir Otro ---"] + nombres_contactos)
@@ -569,47 +528,6 @@ with col_centro[1]:
                 st.session_state.paso_actual = 2
                 guardar_borrador_nube() 
                 st.rerun()
-
-        st.markdown("---")
-        with st.expander("⚙️ Administrar Base de Datos de Clientes"):
-            st.caption("Modifica o elimina contactos guardados.")
-            if clientes_db:
-                opciones_admin = []
-                for c in clientes_db:
-                    con_val = f" | {c.get('Contacto', '')}" if c.get('Contacto', '') else " | S/C"
-                    opciones_admin.append(f"{c['RUT']} | {c['Nombre']}{con_val}")
-                    
-                cliente_sel_admin = st.selectbox("Seleccionar Registro a Editar:", ["--- Seleccione ---"] + opciones_admin, key="admin_cli")
-                
-                if cliente_sel_admin != "--- Seleccione ---":
-                    partes = cliente_sel_admin.split(" | ")
-                    rut_sel_admin = partes[0]
-                    contacto_sel_admin = partes[2] if partes[2] != "S/C" else ""
-                    
-                    datos_cli_admin = next((c for c in clientes_db if str(c['RUT']).upper() == rut_sel_admin and str(c.get('Contacto', '')).upper() == contacto_sel_admin.upper()), None)
-                    
-                    if datos_cli_admin:
-                        n_rut = st.text_input("RUT", value=str(datos_cli_admin.get('RUT', '')), key="e_rut")
-                        n_nom = st.text_input("Razón Social", value=str(datos_cli_admin.get('Nombre', '')), key="e_nom")
-                        n_dir = st.text_input("Dirección", value=str(datos_cli_admin.get('Direccion', '')), key="e_dir")
-                        n_ciu = st.text_input("Ciudad", value=str(datos_cli_admin.get('Ciudad', '')), key="e_ciu")
-                        n_com = st.text_input("Comuna", value=str(datos_cli_admin.get('Comuna', '')), key="e_com")
-                        n_gir = st.text_input("Giro", value=str(datos_cli_admin.get('Giro', '')), key="e_gir")
-                        n_con = st.text_input("Nombre Contacto", value=str(datos_cli_admin.get('Contacto', '')), key="e_con")
-                        n_fon = st.text_input("Teléfono", value=str(datos_cli_admin.get('Fono', '')), key="e_fon")
-                        
-                        col_ed1, col_ed2 = st.columns(2)
-                        if col_ed1.button("💾 Guardar Cambios", use_container_width=True):
-                            rut_fmt = formato_rut_chileno(n_rut)
-                            actualizar_cliente(rut_sel_admin, contacto_sel_admin, [rut_fmt, n_nom.upper(), n_dir.upper(), n_ciu.upper(), n_com.upper(), n_gir.upper(), n_con.upper(), n_fon])
-                            st.success("✅ Contacto actualizado.")
-                            time.sleep(1); st.rerun()
-                        if col_ed2.button("🗑️ Eliminar Registro", use_container_width=True):
-                            eliminar_cliente(rut_sel_admin, contacto_sel_admin)
-                            st.success("✅ Registro eliminado.")
-                            time.sleep(1); st.rerun()
-            else:
-                st.info("Aún no hay clientes en la base de datos.")
 
     # --- PASO 2: PRODUCTOS Y MANO DE OBRA ---
     elif st.session_state.paso_actual == 2:
