@@ -74,12 +74,14 @@ BASE_VEHICULOS = {
 def formato_rut_chileno(rut):
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
     if len(rut_limpio) <= 1: return rut_limpio
+    
     cuerpo = rut_limpio[:-1]
     dv = rut_limpio[-1]
     try:
         cuerpo_fmt = f"{int(cuerpo):,}".replace(",", ".")
         return f"{cuerpo_fmt}-{dv}"
-    except: return rut_limpio
+    except:
+        return rut_limpio
 
 def obtener_y_registrar_correlativo(cliente, total):
     client = conectar_google_sheets()
@@ -90,9 +92,11 @@ def obtener_y_registrar_correlativo(cliente, total):
             except:
                 worksheet_hist = spreadsheet.add_worksheet(title="Historial", rows="1000", cols="4")
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
+            
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
             correlativo_str = str(1650 + numero_actual)
+            
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
@@ -249,7 +253,8 @@ class PDF(FPDF):
 
     def header(self):
         logo_path = encontrar_imagen("logo") 
-        if logo_path: self.image(logo_path, x=10, y=8, w=50)
+        # CORRECCIÓN 2: ALINEAR LOGO CON EL CUADRO (Compartir línea base superior con cuadro)
+        if logo_path: self.image(logo_path, x=10, y=15, w=50) # Cambiado de y=8 a y=15
         
         self.set_xy(10, 40)
         self.set_font('Arial', 'B', 9); self.cell(100, 4, EMPRESA_NOMBRE, 0, 1, 'L')
@@ -258,15 +263,21 @@ class PDF(FPDF):
         self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
         self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
 
+        # --- SECCIÓN CUADRO DE COTIZACIÓN ---
         self.set_xy(140, 15)
         self.set_font('Arial', 'B', 16)
-        self.cell(60, 8, "COTIZACIÓN", 'LTR', 1, 'C')
         
+        # CORRECCIÓN 3: CAMBIAR TÍTULO Y USAR MULTI_CELL PARA EVITAR DESBORDAMIENTO
+        # Usamos MultiCell con h=4 para dos líneas que suman 8 de alto.
+        self.multi_cell(60, 4, "COTIZACIÓN DE\nSERVICIO", 'LTR', 'C') # Cambiado texto y tipo celda
+        
+        # El cursor baja automáticamente Y + 8. Reajustamos X para el N°.
         self.set_x(140)
-        self.set_font('Arial', 'B', 14)
+        # self.set_font('Arial', 'B', 14) # Mantenemos fuente N°
         titulo = f"N° {self.correlativo}" if self.correlativo else "N° BORRADOR"
-        self.cell(60, 8, titulo, 'LBR', 1, 'C')
-        self.ln(15)
+        self.cell(60, 8, titulo, 'LBR', 1, 'C') # Volvemos a cell para el N°
+        
+        self.ln(15) # Salto de línea base.
 
     def footer(self):
         self.set_y(-15); self.set_font('Arial', 'I', 8); self.set_text_color(150, 150, 150)
@@ -277,7 +288,10 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
     # --- 1. TABLA DATOS DEL CLIENTE ---
-    pdf.set_y(45)
+    # CORRECCIÓN 1: SOLUCIONAR SUPERPOSICIÓN (Chocaban Emisor vs. Cliente).
+    # Bajamos el inicio de la tabla del cliente de 45 a 70.
+    pdf.set_y(70) # Cambiado de 45 a 70
+    
     pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
     pdf.cell(190, 6, "  DATOS DEL CLIENTE", 1, 1, 'L', 1)
     
@@ -312,7 +326,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
 
     pdf.ln(6)
 
-    # --- 3. TABLA DETALLE DE COTIZACIÓN ---
+    # --- 3. TABLA DETALLE DE COTIZACIÓN (Sin columna de cantidad) ---
     pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(230, 230, 230)
     pdf.cell(130, 7, "Descripción", 1, 0, 'C', 1)
     pdf.cell(30, 7, "Descuento", 1, 0, 'C', 1)
@@ -630,19 +644,13 @@ with col_centro[1]:
             with st.container():
                 for i, cristal in enumerate(cristales_a_procesar):
                     desc_sugerida = cristal
-                    key_id = cristal.replace(" ", "_").replace("/", "_")
-                    
                     if "PARABRISAS" in cristal:
-                        if camara_sel == "Sí": 
-                            desc_sugerida += " C/CÁMARA"
-                            key_id += "_cam"
-                        if sensor_sel == "Sí": 
-                            desc_sugerida += " C/SENSOR"
-                            key_id += "_sen"
+                        if camara_sel == "Sí": desc_sugerida += " C/CÁMARA"
+                        if sensor_sel == "Sí": desc_sugerida += " C/SENSOR"
                     
                     col_p1, col_p2 = st.columns([3, 1])
-                    d_p = col_p1.text_input(f"Descripción Producto {i+1}", value=desc_sugerida, key=f"d_p_{key_id}")
-                    p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key=f"p_p_{key_id}")
+                    d_p = col_p1.text_input(f"Descripción Producto {i+1}", value=desc_sugerida, key=f"d_p_{i}")
+                    p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key=f"p_p_{i}")
                     productos_temp.append({"desc": d_p, "precio": p_p})
                 
                 if st.button("➕ Agregar Producto(s) al Presupuesto", use_container_width=True):
