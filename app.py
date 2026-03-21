@@ -238,7 +238,7 @@ def set_servicio(servicio):
     st.session_state.servicio_desc = servicio
 
 # ==========================================
-# 6. CLASE PDF (DISEÑO TABULAR ORDENADO + CORRECCIONES)
+# 6. CLASE PDF (DISEÑO TABULAR ORDENADO)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -498,13 +498,11 @@ with col_centro[1]:
         with tab1:
             st.markdown("##### 🚗 1. Selector de Cristal Dinámico")
             
-            # --- SELECTOR DE CARROCERÍA ---
             tipo_carroceria = st.radio("Seleccione el Tipo de Vehículo:", 
                                        ["Automóvil / SUV", "Camioneta / Pick-up", "Furgón / Van", "Camión", "Micro / Bus"], 
                                        horizontal=True)
             st.markdown("---")
             
-            # --- BOTONERAS DINÁMICAS POR CARROCERÍA ---
             if tipo_carroceria == "Automóvil / SUV":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
@@ -519,10 +517,12 @@ with col_centro[1]:
                 c_t2.button("Puerta T. Izq", use_container_width=True, on_click=set_cristal, args=("PUERTA TRAS. IZQ.",))
                 c_t3.button("Puerta T. Der", use_container_width=True, on_click=set_cristal, args=("PUERTA TRAS. DER.",))
                 c_t4.button("Aleta T. Der", use_container_width=True, on_click=set_cristal, args=("ALETA TRAS. DER.",))
+                
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
                 c_l2.button("🟦 LUNETA TRASERA", use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA",))
+                
                 c_o1, c_o2, c_o3 = st.columns([1, 2, 1])
-                c_o2.button("⬜ ESCOTILLA / TECHO", use_container_width=True, on_click=set_cristal, args=("ESCOTILLA / TECHO",))
+                c_o2.button("⬜ SUNROOF / TECHO PANORÁMICO", use_container_width=True, on_click=set_cristal, args=("SUNROOF / TECHO PANORÁMICO",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PARTE TRASERA</div>", unsafe_allow_html=True)
             
             elif tipo_carroceria == "Camioneta / Pick-up":
@@ -538,6 +538,10 @@ with col_centro[1]:
                 c_a1, c_a2 = st.columns(2)
                 c_a1.button("Aleta Izquierda", use_container_width=True, on_click=set_cristal, args=("ALETA IZQUIERDA",))
                 c_a2.button("Aleta Derecha", use_container_width=True, on_click=set_cristal, args=("ALETA DERECHA",))
+                
+                c_s1, c_s2, c_s3 = st.columns([1, 2, 1])
+                c_s2.button("⬜ SUNROOF / TECHO PANORÁMICO", use_container_width=True, on_click=set_cristal, args=("SUNROOF / TECHO PANORÁMICO",))
+                
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
                 c_l2.button("🟦 LUNETA TRASERA CABINA", use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PICK-UP (CARGA)</div>", unsafe_allow_html=True)
@@ -603,7 +607,6 @@ with col_centro[1]:
                 lista_anios = ["---"] + list(range(2027, 1979, -1))
                 anio_sel = c_v3.selectbox("Año", lista_anios, key="v_anio")
 
-                # LÓGICA DE VISIBILIDAD DE CÁMARA Y SENSOR (Solo si es parabrisas)
                 camara_sel = "No"
                 sensor_sel = "No"
                 if "PARABRISAS" in st.session_state.cristal_sel:
