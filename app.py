@@ -74,12 +74,14 @@ BASE_VEHICULOS = {
 def formato_rut_chileno(rut):
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
     if len(rut_limpio) <= 1: return rut_limpio
+    
     cuerpo = rut_limpio[:-1]
     dv = rut_limpio[-1]
     try:
         cuerpo_fmt = f"{int(cuerpo):,}".replace(",", ".")
         return f"{cuerpo_fmt}-{dv}"
-    except: return rut_limpio
+    except:
+        return rut_limpio
 
 def obtener_y_registrar_correlativo(cliente, total):
     client = conectar_google_sheets()
@@ -90,9 +92,11 @@ def obtener_y_registrar_correlativo(cliente, total):
             except:
                 worksheet_hist = spreadsheet.add_worksheet(title="Historial", rows="1000", cols="4")
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
+            
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
             correlativo_str = str(1650 + numero_actual)
+            
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
@@ -312,7 +316,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
 
     pdf.ln(6)
 
-    # --- 3. TABLA DETALLE DE COTIZACIÓN ---
+    # --- 3. TABLA DETALLE DE COTIZACIÓN (Sin columna de cantidad) ---
     pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(230, 230, 230)
     pdf.cell(130, 7, "Descripción", 1, 0, 'C', 1)
     pdf.cell(30, 7, "Descuento", 1, 0, 'C', 1)
@@ -608,7 +612,7 @@ with col_centro[1]:
                 c_d1, c_d2 = st.columns(2)
                 c_d1.button("Puerta Chofer Izq", type=btn_type("PUERTA CHOFER"), use_container_width=True, on_click=toggle_cristal, args=("PUERTA CHOFER",))
                 c_d2.button("Puerta Acceso Der", type=btn_type("PUERTA ACCESO PASAJEROS"), use_container_width=True, on_click=toggle_cristal, args=("PUERTA ACCESO PASAJEROS",))
-                st.button("Vidrio Lateral Salón Pasajeros", type=btn_type("VIDRIO LATERAL SALÓN"), use_container_width=True, on_click=toggle_cristal, args=("VIDRIO LATERAL SALÓN",))
+                st.button("Vidrio Lateral Salón Pasajeros", type=btn_type("VIDRIO LATERAL SALÓN PASAJEROS"), use_container_width=True, on_click=toggle_cristal, args=("VIDRIO LATERAL SALÓN PASAJEROS",))
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
                 c_l2.button("🟦 LUNETA TRASERA BUS", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PARTE TRASERA BUS</div>", unsafe_allow_html=True)
@@ -621,10 +625,9 @@ with col_centro[1]:
                 camara_sel = c_v4.radio("¿Tiene Cámara?", ["No", "Sí"], horizontal=True, key="v_cam")
                 sensor_sel = c_v5.radio("¿Sensor de Lluvia?", ["No", "Sí"], horizontal=True, key="v_sen")
 
-            # --- CARRITO DE SELECCIÓN MÚLTIPLE ---
+            # --- CARRITO DE SELECCIÓN MÚLTIPLE EN FILAS SEPARADAS ---
             st.markdown("##### 🛒 2. Detalle de Productos a Agregar")
             
-            # Si no hay nada seleccionado, mostramos una caja vacía para que pueda agregar algo manual
             cristales_a_procesar = st.session_state.cristales_sel if st.session_state.cristales_sel else ["CRISTAL / REPUESTO"]
             
             productos_temp = []
@@ -636,7 +639,7 @@ with col_centro[1]:
                         if sensor_sel == "Sí": desc_sugerida += " C/SENSOR"
                     
                     col_p1, col_p2 = st.columns([3, 1])
-                    d_p = col_p1.text_input("Descripción", value=desc_sugerida, key=f"d_p_{i}")
+                    d_p = col_p1.text_input(f"Descripción Producto {i+1}", value=desc_sugerida, key=f"d_p_{i}")
                     p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key=f"p_p_{i}")
                     productos_temp.append({"desc": d_p, "precio": p_p})
                 
@@ -657,7 +660,7 @@ with col_centro[1]:
                         guardar_borrador_nube()
                         st.rerun()
                     else:
-                        st.warning("⚠️ Debes ingresar un valor mayor a $0 para agregar el producto.")
+                        st.warning("⚠️ Debes ingresar un valor mayor a $0 para agregar.")
             
             if st.session_state.items_productos:
                 st.markdown("---")
