@@ -214,11 +214,12 @@ def limpiar_borrador_nube():
 # 4. DATOS DE LA EMPRESA Y ESTILOS
 # ==========================================
 EMPRESA_NOMBRE = "LILY ISABEL UNDA CONTRERAS"
-EMPRESA_GIRO = "VTA, FABRIC Y REPARAC. DE PARABRISAS Y SUS ACCESORIOS"
+EMPRESA_GIRO = "VENTA, FABRICACIÓN Y REPARACIÓN DE PARABRISAS Y SUS ACCESORIOS" # <-- Corrección de Abreviación
 RUT_EMPRESA = "8.810.453-6" 
 DIRECCION = "Caupolicán 0320 - Temuco" 
 COLOR_HEX = "#ff6c15"
 
+# --- HACK CSS PARA DESACTIVAR TECLADO EN SELECTBOX ---
 st.markdown(f"""
 <style>
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 10px; }}
@@ -284,11 +285,11 @@ class PDF(FPDF):
         if logo_path: self.image(logo_path, x=10, y=15, w=50) 
         
         self.set_xy(10, 40)
-        self.set_font('Arial', 'B', 9); self.cell(100, 4, EMPRESA_NOMBRE, 0, 1, 'L')
+        self.set_font('Arial', 'B', 9); self.cell(120, 4, EMPRESA_NOMBRE, 0, 1, 'L')
         self.set_font('Arial', '', 8)
-        self.cell(100, 4, EMPRESA_GIRO, 0, 1, 'L')
-        self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
-        self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
+        self.cell(120, 4, EMPRESA_GIRO, 0, 1, 'L') # <-- Ampliado el ancho para que quepa todo el giro
+        self.cell(120, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
+        self.set_font('Arial', 'B', 9); self.cell(120, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
 
         # --- CUADRO ESTILO SII (FACTURA ELECTRÓNICA) ---
         self.set_xy(140, 15)
@@ -296,7 +297,7 @@ class PDF(FPDF):
         # Color Rojo Puro
         self.set_text_color(220, 0, 0) 
         self.set_draw_color(220, 0, 0)
-        self.set_line_width(0.4) # Borde más grueso
+        self.set_line_width(0.4)
         
         self.set_font('Arial', 'B', 16)
         self.cell(60, 10, "COTIZACIÓN", 'LTR', 1, 'C') 
@@ -328,20 +329,21 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
     pdf.cell(190, 6, "  DATOS DEL CLIENTE", 1, 1, 'L', 1)
     
     pdf.set_font('Arial', 'B', 9)
+    # CORRECCIÓN: Estandarización de anchos de columna derecha (28 y 52)
     pdf.cell(25, 6, " Señor(es)", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
     
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " RUT", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
     
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Dirección", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('direccion', '')).upper()}"[:45], 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 8); pdf.cell(50, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 8); pdf.cell(52, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
     
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Ciudad", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
     
     pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Giro", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('giro', '')).upper()}"[:45], 'B', 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Vendedor", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(55, 6, ": ANA MARIA RIQUELME", 'R,B', 1)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Vendedor", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, ": ANA MARIA RIQUELME", 'R,B', 1)
     
     pdf.ln(4)
     
@@ -394,23 +396,24 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
     neto = total_general / 1.19
     iva = total_general - neto
     
+    # CORRECCIÓN: Alineación estricta del cuadro de totales (x=140, anchos 30 y 30)
     pdf.ln(5)
-    pdf.set_x(130)
+    pdf.set_x(140)
     pdf.set_font('Arial', 'B', 9)
-    pdf.cell(35, 6, "SUB TOTAL", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(25, 6, format_clp(total_general), 1, 1, 'R')
+    pdf.cell(30, 6, "SUB TOTAL", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(total_general), 1, 1, 'R')
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "DESCUENTO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(25, 6, "$0", 1, 1, 'R')
+    pdf.set_x(140)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "DESCUENTO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, "$0", 1, 1, 'R')
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "NETO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(25, 6, format_clp(neto), 1, 1, 'R')
+    pdf.set_x(140)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "NETO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(neto), 1, 1, 'R')
     
-    pdf.set_x(130)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "I.V.A. (19%)", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(25, 6, format_clp(iva), 1, 1, 'R')
+    pdf.set_x(140)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "I.V.A. (19%)", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(iva), 1, 1, 'R')
     
-    pdf.set_x(130)
+    pdf.set_x(140)
     pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
-    pdf.cell(35, 8, "TOTAL", 1, 0, 'L', 1); pdf.cell(25, 8, format_clp(total_general), 1, 1, 'R', 1)
+    pdf.cell(30, 8, "TOTAL", 1, 0, 'L', 1); pdf.cell(30, 8, format_clp(total_general), 1, 1, 'R', 1)
 
     return pdf.output(dest='S').encode('latin-1')
 
