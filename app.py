@@ -64,8 +64,7 @@ BASE_VEHICULOS = {
     "Citroën": ["C3", "C4", "C5 Aircross", "Berlingo", "Jumper", "Spacetourer"],
     "Jeep": ["Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Gladiator"],
     "Mahindra": ["L200", "Pik Up", "Scorpio", "XUV500", "KUV100"],
-    "Ram": ["700", "1000", "1500", "2500", "ProMaster"],
-    "Otra Marca": ["Otro Modelo (Escribir Manualmente)"]
+    "Ram": ["700", "1000", "1500", "2500", "ProMaster"]
 }
 
 # ==========================================
@@ -74,7 +73,6 @@ BASE_VEHICULOS = {
 def formato_rut_chileno(rut):
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
     if len(rut_limpio) <= 1: return rut_limpio
-    
     cuerpo = rut_limpio[:-1]
     dv = rut_limpio[-1]
     try:
@@ -91,11 +89,9 @@ def obtener_y_registrar_correlativo(cliente, total):
             except:
                 worksheet_hist = spreadsheet.add_worksheet(title="Historial", rows="1000", cols="4")
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
-            
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
             correlativo_str = str(1650 + numero_actual)
-            
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
@@ -195,6 +191,7 @@ RUT_EMPRESA = "8.810.453-6"
 DIRECCION = "Caupolicán 0320 - Temuco" 
 COLOR_HEX = "#ff6c15"
 
+# --- HACK CSS PARA DESACTIVAR TECLADO EN SELECTBOX ---
 st.markdown(f"""
 <style>
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 10px; }}
@@ -203,6 +200,11 @@ st.markdown(f"""
     .stButton > button[kind="primary"] {{ background-color: {COLOR_HEX} !important; border-color: {COLOR_HEX} !important; color: white !important; font-weight: bold; padding: 10px; transition: 0.2s; }}
     .stButton > button[kind="primary"]:hover {{ background-color: #E65A0D !important; border-color: #E65A0D !important; }}
     footer {{ display: none !important; }} 
+    
+    /* Desactivar foco y teclado en las listas desplegables (Selectbox) para celular */
+    div[data-baseweb="select"] input {{
+        pointer-events: none !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -504,13 +506,43 @@ with col_centro[1]:
             st.markdown(f"**Cliente:** {st.session_state.get('cliente_confirmado', '')} | **RUT:** {st.session_state.get('rut_confirmado', '')}")
         st.markdown("---")
         
-        # --- DATOS DEL VEHÍCULO GLOBAL ---
+        # --- DATOS DEL VEHÍCULO GLOBAL CON OPCIÓN DE AGREGAR MANUALMENTE ---
         st.markdown("#### 🚗 Datos del Vehículo")
         c_v1, c_v2, c_v3, c_v4 = st.columns(4)
-        marca_sel = c_v1.selectbox("Marca", list(BASE_VEHICULOS.keys()), key="v_marca")
-        modelo_sel = c_v2.selectbox("Modelo", BASE_VEHICULOS.get(marca_sel, ["---"]), key="v_modelo")
-        lista_anios = ["---"] + list(range(2027, 1979, -1))
+        
+        lista_marcas = list(BASE_VEHICULOS.keys())
+        if "--- AGREGAR OTRA MARCA ---" not in lista_marcas:
+            lista_marcas.append("--- AGREGAR OTRA MARCA ---")
+            
+        marca_sel = c_v1.selectbox("Marca", lista_marcas, key="v_marca")
+        
+        # Lógica si selecciona "Agregar Otra Marca"
+        if marca_sel == "--- AGREGAR OTRA MARCA ---":
+            marca_final = c_v1.text_input("Escriba la Marca:", placeholder="Ej: Motorhome", key="v_marca_man").upper()
+            modelos_lista = ["--- AGREGAR OTRO MODELO ---"]
+        else:
+            marca_final = marca_sel
+            modelos_lista = BASE_VEHICULOS.get(marca_sel, ["---"]).copy()
+            if "--- AGREGAR OTRO MODELO ---" not in modelos_lista:
+                modelos_lista.append("--- AGREGAR OTRO MODELO ---")
+                
+        modelo_sel = c_v2.selectbox("Modelo", modelos_lista, key="v_modelo")
+        
+        # Lógica si selecciona "Agregar Otro Modelo"
+        if modelo_sel == "--- AGREGAR OTRO MODELO ---":
+            modelo_final = c_v2.text_input("Escriba el Modelo:", placeholder="Ej: Ducato L3H2", key="v_modelo_man").upper()
+        else:
+            modelo_final = modelo_sel
+            
+        lista_anios = ["---"] + list(range(2027, 1979, -1)) + ["OTRO (MÁS ANTIGUO)"]
         anio_sel = c_v3.selectbox("Año", lista_anios, key="v_anio")
+        
+        # Lógica si selecciona Otro Año
+        if anio_sel == "OTRO (MÁS ANTIGUO)":
+            anio_final = c_v3.text_input("Escriba el Año:", placeholder="Ej: 1975", key="v_anio_man")
+        else:
+            anio_final = anio_sel
+            
         patente_sel = c_v4.text_input("Patente (Opcional)", placeholder="Ej: AB-CD-12", key="v_pat")
         st.markdown("---")
 
@@ -636,9 +668,18 @@ with col_centro[1]:
                 for i, cristal in enumerate(cristales_a_procesar):
                     desc_sugerida = cristal
                     
-                    # Generamos una ID única limpiando el nombre del cristal para que Streamlit no mezcle las cajas
+                    # Generamos una ID única limpiando el nombre del cristal
                     key_id = cristal.replace(" ", "_").replace("/", "_").replace(".", "")
                     
+                    # Agregamos la marca y modelo automáticamente a la descripción para ahorrar tipeo
+                    if marca_final and marca_final not in ["--- Seleccione Marca ---", "---", "--- AGREGAR OTRA MARCA ---"]:
+                        desc_sugerida += f" {marca_final}"
+                        if modelo_final and modelo_final not in ["---", "--- AGREGAR OTRO MODELO ---"]:
+                            desc_sugerida += f" {modelo_final}"
+                        if anio_final and anio_final not in ["---", "OTRO (MÁS ANTIGUO)"]:
+                            desc_sugerida += f" {anio_final}"
+
+                    # Si es parabrisas, le añadimos si tiene cámara o sensor al final
                     if "PARABRISAS" in cristal:
                         if camara_sel == "Sí": 
                             desc_sugerida += " C/CÁMARA"
@@ -730,9 +771,9 @@ with col_centro[1]:
                     }
                     
                     datos_vehiculo = {
-                        "marca": marca_sel if marca_sel != "--- Seleccione Marca ---" else "",
-                        "modelo": modelo_sel if modelo_sel != "---" else "",
-                        "anio": anio_sel if anio_sel != "---" else "",
+                        "marca": marca_final if marca_final not in ["--- Seleccione Marca ---", "--- AGREGAR OTRA MARCA ---", "---"] else "",
+                        "modelo": modelo_final if modelo_final not in ["---", "--- AGREGAR OTRO MODELO ---"] else "",
+                        "anio": anio_final if anio_final not in ["---", "OTRO (MÁS ANTIGUO)"] else "",
                         "patente": patente_sel
                     }
                     
