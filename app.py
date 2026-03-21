@@ -433,7 +433,13 @@ with col_centro[1]:
         c_f1, c_f2 = st.columns(2)
         contacto_fono = c_f1.text_input("Teléfono", value=def_fono)
         
-        opciones_pago = ["Transferencia Electrónica", "Efectivo / Contado", "Tarjeta (Débito/Crédito)", "Orden de Compra (O/C) - 30 días", "Orden de Compra (O/C) - 45 días", "Orden de Compra (O/C) - 60 días", "Crédito Directo a 30 días"]
+        opciones_pago = [
+            "Transferencia Electrónica",
+            "Efectivo / Contado",
+            "Tarjeta (Débito/Crédito)",
+            "Orden de Compra (O/C)",
+            "Crédito Directo a 30 días"
+        ]
         condicion_pago = c_f2.selectbox("Forma de Pago", opciones_pago)
 
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
@@ -599,9 +605,13 @@ with col_centro[1]:
                 lista_anios = ["---"] + list(range(2027, 1979, -1))
                 anio_sel = c_v3.selectbox("Año", lista_anios, key="v_anio")
 
-                c_v4, c_v5 = st.columns(2)
-                camara_sel = c_v4.radio("¿Tiene Cámara?", ["No", "Sí"], horizontal=True, key="v_cam")
-                sensor_sel = c_v5.radio("¿Sensor de Lluvia?", ["No", "Sí"], horizontal=True, key="v_sen")
+                # LÓGICA DE VISIBILIDAD DE CÁMARA Y SENSOR
+                camara_sel = "No"
+                sensor_sel = "No"
+                if "PARABRISAS" in st.session_state.cristal_sel:
+                    c_v4, c_v5 = st.columns(2)
+                    camara_sel = c_v4.radio("¿Tiene Cámara?", ["No", "Sí"], horizontal=True, key="v_cam")
+                    sensor_sel = c_v5.radio("¿Sensor de Lluvia?", ["No", "Sí"], horizontal=True, key="v_sen")
 
             desc_sugerida = f"{st.session_state.cristal_sel}"
             if marca_sel != "--- Seleccione Marca ---":
