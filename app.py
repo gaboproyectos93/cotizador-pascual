@@ -159,7 +159,7 @@ def guardar_borrador_nube():
         sheet = client.open(NOMBRE_HOJA_GOOGLE)
         try: ws = sheet.worksheet("Borrador")
         except: ws = sheet.add_worksheet(title="Borrador", rows="2", cols="2")
-        datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k.endswith('_confirmada') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios' or k == 'cristal_sel' or k == 'servicio_desc'}
+        datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k.endswith('_confirmada') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios' or k == 'cristales_sel' or k == 'servicio_desc'}
         ws.update_acell('A1', json.dumps(datos))
     except Exception: pass
 
@@ -220,21 +220,24 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 5. LÓGICA DE TECLADO DINÁMICO
+# 5. LÓGICA DE MULTISELECCIÓN
 # ==========================================
-if 'cristal_sel' not in st.session_state:
-    st.session_state.cristal_sel = ""
+if 'cristales_sel' not in st.session_state:
+    st.session_state.cristales_sel = []
 if 'servicio_desc' not in st.session_state:
     st.session_state.servicio_desc = "INSTALACIÓN DE CRISTAL"
 
-def set_cristal(cristal):
-    st.session_state.cristal_sel = cristal
-    
+def toggle_cristal(cristal):
+    if cristal in st.session_state.cristales_sel:
+        st.session_state.cristales_sel.remove(cristal)
+    else:
+        st.session_state.cristales_sel.append(cristal)
+        
 def set_servicio(servicio):
     st.session_state.servicio_desc = servicio
 
 def btn_type(cristal):
-    return "primary" if st.session_state.cristal_sel == cristal else "secondary"
+    return "primary" if cristal in st.session_state.cristales_sel else "secondary"
 
 # ==========================================
 # 6. CLASE PDF (DISEÑO TABULAR ORDENADO + DATOS DEL MÓVIL)
@@ -309,7 +312,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
 
     pdf.ln(6)
 
-    # --- 3. TABLA DETALLE DE COTIZACIÓN (Sin columna de cantidad) ---
+    # --- 3. TABLA DETALLE DE COTIZACIÓN ---
     pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(230, 230, 230)
     pdf.cell(130, 7, "Descripción", 1, 0, 'C', 1)
     pdf.cell(30, 7, "Descuento", 1, 0, 'C', 1)
@@ -435,13 +438,7 @@ with col_centro[1]:
         c_f1, c_f2 = st.columns(2)
         contacto_fono = c_f1.text_input("Teléfono", value=def_fono)
         
-        opciones_pago = [
-            "Transferencia Electrónica",
-            "Efectivo / Contado",
-            "Tarjeta (Débito/Crédito)",
-            "Orden de Compra (O/C)",
-            "Crédito Directo a 30 días"
-        ]
+        opciones_pago = ["Transferencia Electrónica", "Efectivo / Contado", "Tarjeta (Débito/Crédito)", "Orden de Compra (O/C)", "Crédito Directo a 30 días"]
         condicion_pago = c_f2.selectbox("Forma de Pago", opciones_pago)
 
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
@@ -502,7 +499,7 @@ with col_centro[1]:
             st.markdown(f"**Cliente:** {st.session_state.get('cliente_confirmado', '')} | **RUT:** {st.session_state.get('rut_confirmado', '')}")
         st.markdown("---")
         
-        # --- NUEVA SECCIÓN GLOBAL: DATOS DEL VEHÍCULO ---
+        # --- DATOS DEL VEHÍCULO GLOBAL ---
         st.markdown("#### 🚗 Datos del Vehículo")
         c_v1, c_v2, c_v3, c_v4 = st.columns(4)
         marca_sel = c_v1.selectbox("Marca", list(BASE_VEHICULOS.keys()), key="v_marca")
@@ -515,7 +512,7 @@ with col_centro[1]:
         tab1, tab2 = st.tabs(["📦 Productos", "🔧 Servicios"])
         
         with tab1:
-            st.markdown("##### 1. Selector de Cristal Dinámico")
+            st.markdown("##### 1. Selector de Cristal Dinámico (Selección Múltiple)")
             
             tipo_carroceria = st.radio("Seleccione el Tipo de Vehículo:", 
                                        ["Automóvil / SUV", "Camioneta / Pick-up", "Furgón / Van", "Camión", "Micro / Bus"], 
@@ -525,120 +522,142 @@ with col_centro[1]:
             if tipo_carroceria == "Automóvil / SUV":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
-                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS",))
+                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
                 c_d1, c_d2, c_d3, c_d4 = st.columns(4)
-                c_d1.button("Aleta D. Izq", type=btn_type("ALETA DEL. IZQ."), use_container_width=True, on_click=set_cristal, args=("ALETA DEL. IZQ.",))
-                c_d2.button("Puerta D. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. IZQ.",))
-                c_d3.button("Puerta D. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. DER.",))
-                c_d4.button("Aleta D. Der", type=btn_type("ALETA DEL. DER."), use_container_width=True, on_click=set_cristal, args=("ALETA DEL. DER.",))
+                c_d1.button("Aleta D. Izq", type=btn_type("ALETA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("ALETA DEL. IZQ.",))
+                c_d2.button("Puerta D. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. IZQ.",))
+                c_d3.button("Puerta D. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. DER.",))
+                c_d4.button("Aleta D. Der", type=btn_type("ALETA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("ALETA DEL. DER.",))
                 c_t1, c_t2, c_t3, c_t4 = st.columns(4)
-                c_t1.button("Aleta T. Izq", type=btn_type("ALETA TRAS. IZQ."), use_container_width=True, on_click=set_cristal, args=("ALETA TRAS. IZQ.",))
-                c_t2.button("Puerta T. Izq", type=btn_type("PUERTA TRAS. IZQ."), use_container_width=True, on_click=set_cristal, args=("PUERTA TRAS. IZQ.",))
-                c_t3.button("Puerta T. Der", type=btn_type("PUERTA TRAS. DER."), use_container_width=True, on_click=set_cristal, args=("PUERTA TRAS. DER.",))
-                c_t4.button("Aleta T. Der", type=btn_type("ALETA TRAS. DER."), use_container_width=True, on_click=set_cristal, args=("ALETA TRAS. DER.",))
+                c_t1.button("Aleta T. Izq", type=btn_type("ALETA TRAS. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("ALETA TRAS. IZQ.",))
+                c_t2.button("Puerta T. Izq", type=btn_type("PUERTA TRAS. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA TRAS. IZQ.",))
+                c_t3.button("Puerta T. Der", type=btn_type("PUERTA TRAS. DER."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA TRAS. DER.",))
+                c_t4.button("Aleta T. Der", type=btn_type("ALETA TRAS. DER."), use_container_width=True, on_click=toggle_cristal, args=("ALETA TRAS. DER.",))
                 
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
-                c_l2.button("🟦 LUNETA TRASERA", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA",))
+                c_l2.button("🟦 LUNETA TRASERA", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA",))
                 
                 c_o1, c_o2, c_o3 = st.columns([1, 2, 1])
-                c_o2.button("⬜ SUNROOF / TECHO PANORÁMICO", type=btn_type("SUNROOF / TECHO PANORÁMICO"), use_container_width=True, on_click=set_cristal, args=("SUNROOF / TECHO PANORÁMICO",))
+                c_o2.button("⬜ SUNROOF / TECHO PANORÁMICO", type=btn_type("SUNROOF / TECHO PANORÁMICO"), use_container_width=True, on_click=toggle_cristal, args=("SUNROOF / TECHO PANORÁMICO",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PARTE TRASERA</div>", unsafe_allow_html=True)
             
             elif tipo_carroceria == "Camioneta / Pick-up":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
-                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS",))
+                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
                 c_d1, c_d2 = st.columns(2)
-                c_d1.button("Puerta Del. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. IZQ.",))
-                c_d2.button("Puerta Del. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. DER.",))
+                c_d1.button("Puerta Del. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. IZQ.",))
+                c_d2.button("Puerta Del. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. DER.",))
                 c_t1, c_t2 = st.columns(2)
-                c_t1.button("Puerta Tras. Izq", type=btn_type("PUERTA TRAS. IZQ."), use_container_width=True, on_click=set_cristal, args=("PUERTA TRAS. IZQ.",))
-                c_t2.button("Puerta Tras. Der", type=btn_type("PUERTA TRAS. DER."), use_container_width=True, on_click=set_cristal, args=("PUERTA TRAS. DER.",))
+                c_t1.button("Puerta Tras. Izq", type=btn_type("PUERTA TRAS. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA TRAS. IZQ.",))
+                c_t2.button("Puerta Tras. Der", type=btn_type("PUERTA TRAS. DER."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA TRAS. DER.",))
                 c_a1, c_a2 = st.columns(2)
-                c_a1.button("Aleta Izquierda", type=btn_type("ALETA IZQUIERDA"), use_container_width=True, on_click=set_cristal, args=("ALETA IZQUIERDA",))
-                c_a2.button("Aleta Derecha", type=btn_type("ALETA DERECHA"), use_container_width=True, on_click=set_cristal, args=("ALETA DERECHA",))
+                c_a1.button("Aleta Izquierda", type=btn_type("ALETA IZQUIERDA"), use_container_width=True, on_click=toggle_cristal, args=("ALETA IZQUIERDA",))
+                c_a2.button("Aleta Derecha", type=btn_type("ALETA DERECHA"), use_container_width=True, on_click=toggle_cristal, args=("ALETA DERECHA",))
                 
                 c_s1, c_s2, c_s3 = st.columns([1, 2, 1])
-                c_s2.button("⬜ SUNROOF / TECHO PANORÁMICO", type=btn_type("SUNROOF / TECHO PANORÁMICO"), use_container_width=True, on_click=set_cristal, args=("SUNROOF / TECHO PANORÁMICO",))
+                c_s2.button("⬜ SUNROOF / TECHO PANORÁMICO", type=btn_type("SUNROOF / TECHO PANORÁMICO"), use_container_width=True, on_click=toggle_cristal, args=("SUNROOF / TECHO PANORÁMICO",))
                 
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
-                c_l2.button("🟦 LUNETA TRASERA CABINA", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA",))
+                c_l2.button("🟦 LUNETA TRASERA CABINA", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PICK-UP (CARGA)</div>", unsafe_allow_html=True)
                 
             elif tipo_carroceria == "Furgón / Van":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL VEHÍCULO</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
-                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS",))
+                c_f2.button("🟩 PARABRISAS FRONTAL", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
                 
                 c_d1, c_d2, c_d3, c_d4 = st.columns(4)
-                c_d1.button("Aleta D. Izq", type=btn_type("ALETA DEL. IZQ."), use_container_width=True, on_click=set_cristal, args=("ALETA DEL. IZQ.",))
-                c_d2.button("Puerta D. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. IZQ.",))
-                c_d3.button("Puerta D. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. DER.",))
-                c_d4.button("Aleta D. Der", type=btn_type("ALETA DEL. DER."), use_container_width=True, on_click=set_cristal, args=("ALETA DEL. DER.",))
+                c_d1.button("Aleta D. Izq", type=btn_type("ALETA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("ALETA DEL. IZQ.",))
+                c_d2.button("Puerta D. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. IZQ.",))
+                c_d3.button("Puerta D. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. DER.",))
+                c_d4.button("Aleta D. Der", type=btn_type("ALETA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("ALETA DEL. DER.",))
                 
                 c_l1, c_l2, c_l3 = st.columns(3)
-                c_l1.button("Lateral Fijo Izq", type=btn_type("LATERAL FIJO IZQ."), use_container_width=True, on_click=set_cristal, args=("LATERAL FIJO IZQ.",))
-                c_l2.button("Lateral Corredera", type=btn_type("PUERTA LATERAL CORREDERA"), use_container_width=True, on_click=set_cristal, args=("PUERTA LATERAL CORREDERA",))
-                c_l3.button("Lateral Fijo Der", type=btn_type("LATERAL FIJO DER."), use_container_width=True, on_click=set_cristal, args=("LATERAL FIJO DER.",))
+                c_l1.button("Lateral Fijo Izq", type=btn_type("LATERAL FIJO IZQ."), use_container_width=True, on_click=toggle_cristal, args=("LATERAL FIJO IZQ.",))
+                c_l2.button("Lateral Corredera", type=btn_type("PUERTA LATERAL CORREDERA"), use_container_width=True, on_click=toggle_cristal, args=("PUERTA LATERAL CORREDERA",))
+                c_l3.button("Lateral Fijo Der", type=btn_type("LATERAL FIJO DER."), use_container_width=True, on_click=toggle_cristal, args=("LATERAL FIJO DER.",))
                 
                 c_t1, c_t2 = st.columns(2)
-                c_t1.button("Luneta Izquierda", type=btn_type("LUNETA TRASERA IZQ."), use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA IZQ.",))
-                c_t2.button("Luneta Derecha", type=btn_type("LUNETA TRASERA DER."), use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA DER.",))
+                c_t1.button("Luneta Izquierda", type=btn_type("LUNETA TRASERA IZQ."), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA IZQ.",))
+                c_t2.button("Luneta Derecha", type=btn_type("LUNETA TRASERA DER."), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA DER.",))
                 
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PARTE TRASERA CARGA</div>", unsafe_allow_html=True)
 
             elif tipo_carroceria == "Camión":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DE CABINA</div>", unsafe_allow_html=True)
                 c_f1, c_f2, c_f3 = st.columns(3)
-                c_f1.button("Parabrisas Izq", type=btn_type("PARABRISAS IZQUIERDO"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS IZQUIERDO",))
-                c_f2.button("Parabrisas Entero", type=btn_type("PARABRISAS"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS",))
-                c_f3.button("Parabrisas Der", type=btn_type("PARABRISAS DERECHO"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS DERECHO",))
+                c_f1.button("Parabrisas Izq", type=btn_type("PARABRISAS IZQUIERDO"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS IZQUIERDO",))
+                c_f2.button("Parabrisas Entero", type=btn_type("PARABRISAS FRONTAL"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS FRONTAL",))
+                c_f3.button("Parabrisas Der", type=btn_type("PARABRISAS DERECHO"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS DERECHO",))
                 c_d1, c_d2 = st.columns(2)
-                c_d1.button("Puerta Del. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. IZQ.",))
-                c_d2.button("Puerta Del. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. DER.",))
+                c_d1.button("Puerta Del. Izq", type=btn_type("PUERTA DEL. IZQ."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. IZQ.",))
+                c_d2.button("Puerta Del. Der", type=btn_type("PUERTA DEL. DER."), use_container_width=True, on_click=toggle_cristal, args=("PUERTA DEL. DER.",))
                 c_a1, c_a2 = st.columns(2)
-                c_a1.button("Aleta Litera Izq", type=btn_type("ALETA LITERA IZQ."), use_container_width=True, on_click=set_cristal, args=("ALETA LITERA IZQ.",))
-                c_a2.button("Aleta Litera Der", type=btn_type("ALETA LITERA DER."), use_container_width=True, on_click=set_cristal, args=("ALETA LITERA DER.",))
+                c_a1.button("Aleta Litera Izq", type=btn_type("ALETA LITERA IZQ."), use_container_width=True, on_click=toggle_cristal, args=("ALETA LITERA IZQ.",))
+                c_a2.button("Aleta Litera Der", type=btn_type("ALETA LITERA DER."), use_container_width=True, on_click=toggle_cristal, args=("ALETA LITERA DER.",))
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
-                c_l2.button("🟦 LUNETA TRASERA CABINA", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA",))
+                c_l2.button("🟦 LUNETA TRASERA CABINA", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>RESPALDO CABINA</div>", unsafe_allow_html=True)
 
             elif tipo_carroceria == "Micro / Bus":
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold;'>FRENTE DEL BUS</div>", unsafe_allow_html=True)
                 c_f1, c_f2 = st.columns(2)
-                c_f1.button("Parabrisas Superior", type=btn_type("PARABRISAS SUPERIOR"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS SUPERIOR",))
-                c_f2.button("Parabrisas Inferior", type=btn_type("PARABRISAS INFERIOR"), use_container_width=True, on_click=set_cristal, args=("PARABRISAS INFERIOR",))
+                c_f1.button("Parabrisas Superior", type=btn_type("PARABRISAS SUPERIOR"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS SUPERIOR",))
+                c_f2.button("Parabrisas Inferior", type=btn_type("PARABRISAS INFERIOR"), use_container_width=True, on_click=toggle_cristal, args=("PARABRISAS INFERIOR",))
                 c_d1, c_d2 = st.columns(2)
-                c_d1.button("Puerta Chofer Izq", type=btn_type("PUERTA CHOFER"), use_container_width=True, on_click=set_cristal, args=("PUERTA CHOFER",))
-                c_d2.button("Puerta Acceso Der", type=btn_type("PUERTA ACCESO PASAJEROS"), use_container_width=True, on_click=set_cristal, args=("PUERTA ACCESO PASAJEROS",))
-                st.button("Vidrio Lateral Salón Pasajeros", type=btn_type("VIDRIO LATERAL SALÓN PASAJEROS"), use_container_width=True, on_click=set_cristal, args=("VIDRIO LATERAL SALÓN PASAJEROS",))
+                c_d1.button("Puerta Chofer Izq", type=btn_type("PUERTA CHOFER"), use_container_width=True, on_click=toggle_cristal, args=("PUERTA CHOFER",))
+                c_d2.button("Puerta Acceso Der", type=btn_type("PUERTA ACCESO PASAJEROS"), use_container_width=True, on_click=toggle_cristal, args=("PUERTA ACCESO PASAJEROS",))
+                st.button("Vidrio Lateral Salón Pasajeros", type=btn_type("VIDRIO LATERAL SALÓN"), use_container_width=True, on_click=toggle_cristal, args=("VIDRIO LATERAL SALÓN",))
                 c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
-                c_l2.button("🟦 LUNETA TRASERA BUS", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=set_cristal, args=("LUNETA TRASERA",))
+                c_l2.button("🟦 LUNETA TRASERA BUS", type=btn_type("LUNETA TRASERA"), use_container_width=True, on_click=toggle_cristal, args=("LUNETA TRASERA",))
                 st.markdown("<div style='text-align: center; color: gray; font-size: 14px; font-weight: bold; margin-bottom: 15px;'>PARTE TRASERA BUS</div>", unsafe_allow_html=True)
 
-            # LÓGICA DE VISIBILIDAD DE CÁMARA Y SENSOR (Solo si es parabrisas)
+            # LÓGICA DE VISIBILIDAD DE CÁMARA Y SENSOR
             camara_sel = "No"
             sensor_sel = "No"
-            if "PARABRISAS" in st.session_state.cristal_sel:
+            if any("PARABRISAS" in c for c in st.session_state.cristales_sel):
                 c_v4, c_v5 = st.columns(2)
                 camara_sel = c_v4.radio("¿Tiene Cámara?", ["No", "Sí"], horizontal=True, key="v_cam")
                 sensor_sel = c_v5.radio("¿Sensor de Lluvia?", ["No", "Sí"], horizontal=True, key="v_sen")
 
-            desc_sugerida = f"{st.session_state.cristal_sel}"
-            if camara_sel == "Sí": desc_sugerida += " C/CÁMARA"
-            if sensor_sel == "Sí": desc_sugerida += " C/SENSOR"
-
-            st.markdown("##### 🛒 2. Agregar a la Cotización")
+            # --- CARRITO DE SELECCIÓN MÚLTIPLE ---
+            st.markdown("##### 🛒 2. Detalle de Productos a Agregar")
+            
+            # Si no hay nada seleccionado, mostramos una caja vacía para que pueda agregar algo manual
+            cristales_a_procesar = st.session_state.cristales_sel if st.session_state.cristales_sel else ["CRISTAL / REPUESTO"]
+            
+            productos_temp = []
             with st.container():
-                col_p1, col_p2 = st.columns([3, 1])
-                d_p = col_p1.text_input("Descripción del Producto", value=desc_sugerida, placeholder="Seleccione un cristal arriba...")
-                p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_prod")
+                for i, cristal in enumerate(cristales_a_procesar):
+                    desc_sugerida = cristal
+                    if "PARABRISAS" in cristal:
+                        if camara_sel == "Sí": desc_sugerida += " C/CÁMARA"
+                        if sensor_sel == "Sí": desc_sugerida += " C/SENSOR"
+                    
+                    col_p1, col_p2 = st.columns([3, 1])
+                    d_p = col_p1.text_input("Descripción", value=desc_sugerida, key=f"d_p_{i}")
+                    p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key=f"p_p_{i}")
+                    productos_temp.append({"desc": d_p, "precio": p_p})
                 
-                if st.button("➕ Agregar Producto al Presupuesto", use_container_width=True):
-                    if d_p and p_p > 0:
-                        st.session_state.items_productos.append({"Descripción": d_p, "Cantidad": 1, "Unitario": p_p, "Total": p_p})
-                        st.session_state.cristal_sel = "" # Limpiamos la selección para el siguiente
-                        guardar_borrador_nube(); st.rerun()
+                if st.button("➕ Agregar Producto(s) al Presupuesto", use_container_width=True):
+                    agregados = 0
+                    for p in productos_temp:
+                        if p['desc'] and p['precio'] > 0:
+                            st.session_state.items_productos.append({
+                                "Descripción": p['desc'], 
+                                "Cantidad": 1, 
+                                "Unitario": p['precio'], 
+                                "Total": p['precio']
+                            })
+                            agregados += 1
+                    
+                    if agregados > 0:
+                        st.session_state.cristales_sel = [] # Vaciamos la botonera
+                        guardar_borrador_nube()
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Debes ingresar un valor mayor a $0 para agregar el producto.")
             
             if st.session_state.items_productos:
                 st.markdown("---")
