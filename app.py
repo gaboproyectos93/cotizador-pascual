@@ -30,42 +30,69 @@ def conectar_google_sheets():
         return None
 
 # ==========================================
-# 2. BASE DE DATOS DE VEHÍCULOS (CHILE)
+# 2. BASE DE DATOS DE VEHÍCULOS (CSV DINÁMICO)
 # ==========================================
-BASE_VEHICULOS = {
-    "--- Seleccione Marca ---": ["---"],
-    "Chevrolet": ["Sail", "Spark", "Tracker", "Colorado", "Silverado", "D-Max", "Captiva", "Onix", "Groove", "Spin", "N300", "Optra"],
-    "Toyota": ["Yaris", "Hilux", "RAV4", "Corolla", "Auris", "4Runner", "Fortuner", "Land Cruiser", "Prius", "Rush", "Urban Cruiser"],
-    "Hyundai": ["Accent", "Tucson", "Santa Fe", "Elantra", "Creta", "Grand i10", "H-1", "Porter", "Venue", "Kona", "Ioniq"],
-    "Kia": ["Morning", "Rio", "Cerato", "Sportage", "Sorento", "Frontier", "Soluto", "Sonet", "Niro", "Carnival", "Carens"],
-    "Nissan": ["Versa", "Sentra", "Qashqai", "X-Trail", "NP300", "Navara", "Kicks", "March", "Pathfinder", "Terrano", "Tiida"],
-    "Suzuki": ["Swift", "Baleno", "Vitara", "Grand Nomade", "Jimny", "Dzire", "S-Presso", "Ertiga", "Celerio", "Alto", "S-Cross"],
-    "Peugeot": ["208", "2008", "308", "3008", "5008", "Partner", "Boxer", "Expert", "Rifter"],
-    "Ford": ["Ranger", "F-150", "Territory", "Escape", "Explorer", "Edge", "Transit", "Ecosport", "Puma"],
-    "Mazda": ["Mazda 2", "Mazda 3", "Mazda 6", "CX-3", "CX-30", "CX-5", "CX-9", "BT-50"],
-    "MG": ["ZS", "ZX", "HS", "RX5", "MG3", "MG5", "MG6", "Marvel R"],
-    "Chery": ["Tiggo 2", "Tiggo 3", "Tiggo 4", "Tiggo 7", "Tiggo 8", "Arrizo 5", "IQ"],
-    "Changan": ["CS15", "CS35", "CS55", "CX70", "Hunter", "Alsvin", "UNI-T", "UNI-K"],
-    "Jac": ["S2", "S3", "JS2", "JS3", "JS4", "JS8", "T8", "T6", "Sunray", "Refine"],
-    "Renault": ["Clio", "Symbol", "Captur", "Duster", "Koleos", "Kangoo", "Oroch", "Alaskan", "Megane"],
-    "Mitsubishi": ["L200", "Outlander", "Eclipse Cross", "Montero", "ASX", "Mirage", "Katana"],
-    "Subaru": ["XV", "Forester", "Outback", "Crosstrek", "Impreza", "WRX", "Legacy"],
-    "Honda": ["Civic", "CR-V", "HR-V", "Pilot", "City", "Accord", "WR-V", "Fit"],
-    "Volkswagen": ["Gol", "Polo", "Virtus", "Nivus", "T-Cross", "Taos", "Tiguan", "Amarok", "Saveiro", "Vento"],
-    "Fiat": ["Mobi", "Argo", "Cronos", "Pulse", "Fiorino", "Strada", "Ducato", "Uno"],
-    "BMW": ["Serie 1", "Serie 2", "Serie 3", "X1", "X2", "X3", "X4", "X5"],
-    "Mercedes-Benz": ["Clase A", "Clase C", "GLA", "GLC", "GLE", "Sprinter", "Vito", "Citan"],
-    "Audi": ["A1", "A3", "A4", "Q2", "Q3", "Q5", "Q7"],
-    "Volvo": ["XC40", "XC60", "XC90", "V40", "S60"],
-    "SsangYong": ["Tivoli", "Korando", "Rexton", "Musso", "Actyon", "Grand Musso"],
-    "Great Wall": ["Poer", "Wingle 5", "Wingle 7", "Haval H6", "Haval Jolion", "Voleex"],
-    "Maxus": ["T60", "T90", "G10", "D60", "Deliver 9"],
-    "Geely": ["Coolray", "Azkarra", "GX3", "Emgrand"],
-    "Citroën": ["C3", "C4", "C5 Aircross", "Berlingo", "Jumper", "Spacetourer"],
-    "Jeep": ["Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Gladiator"],
-    "Mahindra": ["L200", "Pik Up", "Scorpio", "XUV500", "KUV100"],
-    "Ram": ["700", "1000", "1500", "2500", "ProMaster"]
-}
+@st.cache_data(ttl=3600)
+def cargar_base_vehiculos():
+    base_por_defecto = {
+        "--- Seleccione Marca ---": ["---"],
+        "Chevrolet": ["Sail", "Spark", "Tracker", "Colorado", "Silverado", "D-Max", "Captiva", "Onix", "Groove", "Spin", "N300", "Optra"],
+        "Toyota": ["Yaris", "Hilux", "RAV4", "Corolla", "Auris", "4Runner", "Fortuner", "Land Cruiser", "Prius", "Rush", "Urban Cruiser"],
+        "Hyundai": ["Accent", "Tucson", "Santa Fe", "Elantra", "Creta", "Grand i10", "H-1", "Porter", "Venue", "Kona", "Ioniq"],
+        "Kia": ["Morning", "Rio", "Cerato", "Sportage", "Sorento", "Frontier", "Soluto", "Sonet", "Niro", "Carnival", "Carens"],
+        "Nissan": ["Versa", "Sentra", "Qashqai", "X-Trail", "NP300", "Navara", "Kicks", "March", "Pathfinder", "Terrano", "Tiida"],
+        "Suzuki": ["Swift", "Baleno", "Vitara", "Grand Nomade", "Jimny", "Dzire", "S-Presso", "Ertiga", "Celerio", "Alto", "S-Cross"],
+        "Peugeot": ["208", "2008", "308", "3008", "5008", "Partner", "Boxer", "Expert", "Rifter"],
+        "Ford": ["Ranger", "F-150", "Territory", "Escape", "Explorer", "Edge", "Transit", "Ecosport", "Puma"],
+        "Mazda": ["Mazda 2", "Mazda 3", "Mazda 6", "CX-3", "CX-30", "CX-5", "CX-9", "BT-50"],
+        "MG": ["ZS", "ZX", "HS", "RX5", "MG3", "MG5", "MG6", "Marvel R"],
+        "Chery": ["Tiggo 2", "Tiggo 3", "Tiggo 4", "Tiggo 7", "Tiggo 8", "Arrizo 5", "IQ"],
+        "Changan": ["CS15", "CS35", "CS55", "CX70", "Hunter", "Alsvin", "UNI-T", "UNI-K"],
+        "Jac": ["S2", "S3", "JS2", "JS3", "JS4", "JS8", "T8", "T6", "Sunray", "Refine"],
+        "Renault": ["Clio", "Symbol", "Captur", "Duster", "Koleos", "Kangoo", "Oroch", "Alaskan", "Megane"],
+        "Mitsubishi": ["L200", "Outlander", "Eclipse Cross", "Montero", "ASX", "Mirage", "Katana"],
+        "Subaru": ["XV", "Forester", "Outback", "Crosstrek", "Impreza", "WRX", "Legacy"],
+        "Honda": ["Civic", "CR-V", "HR-V", "Pilot", "City", "Accord", "WR-V", "Fit"],
+        "Volkswagen": ["Gol", "Polo", "Virtus", "Nivus", "T-Cross", "Taos", "Tiguan", "Amarok", "Saveiro", "Vento"],
+        "Fiat": ["Mobi", "Argo", "Cronos", "Pulse", "Fiorino", "Strada", "Ducato", "Uno"],
+        "BMW": ["Serie 1", "Serie 2", "Serie 3", "X1", "X2", "X3", "X4", "X5"],
+        "Mercedes-Benz": ["Clase A", "Clase C", "GLA", "GLC", "GLE", "Sprinter", "Vito", "Citan"],
+        "Audi": ["A1", "A3", "A4", "Q2", "Q3", "Q5", "Q7"],
+        "Volvo": ["XC40", "XC60", "XC90", "V40", "S60"],
+        "SsangYong": ["Tivoli", "Korando", "Rexton", "Musso", "Actyon", "Grand Musso"],
+        "Great Wall": ["Poer", "Wingle 5", "Wingle 7", "Haval H6", "Haval Jolion", "Voleex"],
+        "Maxus": ["T60", "T90", "G10", "D60", "Deliver 9"],
+        "Geely": ["Coolray", "Azkarra", "GX3", "Emgrand"],
+        "Citroën": ["C3", "C4", "C5 Aircross", "Berlingo", "Jumper", "Spacetourer"],
+        "Jeep": ["Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Gladiator"],
+        "Mahindra": ["L200", "Pik Up", "Scorpio", "XUV500", "KUV100"],
+        "Ram": ["700", "1000", "1500", "2500", "ProMaster"]
+    }
+    
+    try:
+        if os.path.exists("vehiculos.csv"):
+            # Leer el CSV asegurando que interprete bien tildes y caracteres especiales
+            df = pd.read_csv("vehiculos.csv", encoding='utf-8')
+            
+            # Verificar que existan las columnas clave
+            if 'Marca' in df.columns and 'Modelo' in df.columns:
+                base_csv = {"--- Seleccione Marca ---": ["---"]}
+                
+                # Obtener marcas únicas ordenadas alfabéticamente
+                marcas = sorted([str(m) for m in df['Marca'].dropna().unique()])
+                
+                for marca in marcas:
+                    # Obtener modelos de esa marca y ordenarlos alfabéticamente
+                    modelos = df[df['Marca'] == marca]['Modelo'].dropna().tolist()
+                    base_csv[marca] = sorted(list(set([str(m) for m in modelos])))
+                
+                return base_csv
+    except Exception as e:
+        pass # Si falla el CSV por cualquier motivo, simplemente pasamos a usar el defecto
+        
+    return base_por_defecto
+
+BASE_VEHICULOS = cargar_base_vehiculos()
 
 # ==========================================
 # 3. RUT, CORRELATIVOS, CLIENTES Y BORRADORES
@@ -516,7 +543,6 @@ with col_centro[1]:
             
         marca_sel = c_v1.selectbox("Marca", lista_marcas, key="v_marca")
         
-        # Lógica si selecciona "Agregar Otra Marca"
         if marca_sel == "--- AGREGAR OTRA MARCA ---":
             marca_final = c_v1.text_input("Escriba la Marca:", placeholder="Ej: Motorhome", key="v_marca_man").upper()
             modelos_lista = ["--- AGREGAR OTRO MODELO ---"]
@@ -528,7 +554,6 @@ with col_centro[1]:
                 
         modelo_sel = c_v2.selectbox("Modelo", modelos_lista, key="v_modelo")
         
-        # Lógica si selecciona "Agregar Otro Modelo"
         if modelo_sel == "--- AGREGAR OTRO MODELO ---":
             modelo_final = c_v2.text_input("Escriba el Modelo:", placeholder="Ej: Ducato L3H2", key="v_modelo_man").upper()
         else:
@@ -537,7 +562,6 @@ with col_centro[1]:
         lista_anios = ["---"] + list(range(2027, 1979, -1)) + ["OTRO (MÁS ANTIGUO)"]
         anio_sel = c_v3.selectbox("Año", lista_anios, key="v_anio")
         
-        # Lógica si selecciona Otro Año
         if anio_sel == "OTRO (MÁS ANTIGUO)":
             anio_final = c_v3.text_input("Escriba el Año:", placeholder="Ej: 1975", key="v_anio_man")
         else:
@@ -668,18 +692,16 @@ with col_centro[1]:
                 for i, cristal in enumerate(cristales_a_procesar):
                     desc_sugerida = cristal
                     
-                    # Generamos una ID única limpiando el nombre del cristal
+                    # CORRECCIÓN: Generamos una ID única limpiando el nombre del cristal para que Streamlit no mezcle las cajas
                     key_id = cristal.replace(" ", "_").replace("/", "_").replace(".", "")
                     
-                    # Agregamos la marca y modelo automáticamente a la descripción para ahorrar tipeo
-                    if marca_final and marca_final not in ["--- Seleccione Marca ---", "---", "--- AGREGAR OTRA MARCA ---"]:
+                    if marca_final and marca_final not in ["--- Seleccione Marca ---", "--- AGREGAR OTRA MARCA ---", "---"]:
                         desc_sugerida += f" {marca_final}"
                         if modelo_final and modelo_final not in ["---", "--- AGREGAR OTRO MODELO ---"]:
                             desc_sugerida += f" {modelo_final}"
                         if anio_final and anio_final not in ["---", "OTRO (MÁS ANTIGUO)"]:
                             desc_sugerida += f" {anio_final}"
 
-                    # Si es parabrisas, le añadimos si tiene cámara o sensor al final
                     if "PARABRISAS" in cristal:
                         if camara_sel == "Sí": 
                             desc_sugerida += " C/CÁMARA"
