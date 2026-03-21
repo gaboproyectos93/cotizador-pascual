@@ -71,24 +71,16 @@ def cargar_base_vehiculos():
     
     try:
         if os.path.exists("vehiculos.csv"):
-            # Leer el CSV asegurando que interprete bien tildes y caracteres especiales
             df = pd.read_csv("vehiculos.csv", encoding='utf-8')
-            
-            # Verificar que existan las columnas clave
             if 'Marca' in df.columns and 'Modelo' in df.columns:
                 base_csv = {"--- Seleccione Marca ---": ["---"]}
-                
-                # Obtener marcas únicas ordenadas alfabéticamente
                 marcas = sorted([str(m) for m in df['Marca'].dropna().unique()])
-                
                 for marca in marcas:
-                    # Obtener modelos de esa marca y ordenarlos alfabéticamente
                     modelos = df[df['Marca'] == marca]['Modelo'].dropna().tolist()
                     base_csv[marca] = sorted(list(set([str(m) for m in modelos])))
-                
                 return base_csv
     except Exception as e:
-        pass # Si falla el CSV por cualquier motivo, simplemente pasamos a usar el defecto
+        pass 
         
     return base_por_defecto
 
@@ -106,6 +98,18 @@ def formato_rut_chileno(rut):
         cuerpo_fmt = f"{int(cuerpo):,}".replace(",", ".")
         return f"{cuerpo_fmt}-{dv}"
     except: return rut_limpio
+
+def formato_patente_chilena(patente):
+    # Elimina todo lo que no sea letra o número
+    pat = re.sub(r'[^A-Z0-9]', '', str(patente).upper())
+    if len(pat) == 6:
+        # Si la tercera letra es una consonante, es formato nuevo (XXXX-11)
+        if pat[2].isalpha():
+            return f"{pat[:4]}-{pat[4:]}"
+        # Si es un número, es formato antiguo (XX-1111)
+        else:
+            return f"{pat[:2]}-{pat[2:]}"
+    return pat
 
 def obtener_y_registrar_correlativo(cliente, total):
     client = conectar_google_sheets()
@@ -560,14 +564,14 @@ with col_centro[1]:
             modelo_final = modelo_sel
             
         lista_anios = ["---"] + list(range(2027, 1979, -1)) + ["OTRO (MÁS ANTIGUO)"]
-        anio_sel = c_v3.selectbox("Año", lista_anios, key="v_anio")
+        anio_sel = c_v3.selectbox("Año (Opcional)", lista_anios, key="v_anio")
         
         if anio_sel == "OTRO (MÁS ANTIGUO)":
             anio_final = c_v3.text_input("Escriba el Año:", placeholder="Ej: 1975", key="v_anio_man")
         else:
             anio_final = anio_sel
             
-        patente_sel = c_v4.text_input("Patente (Opcional)", placeholder="Ej: AB-CD-12", key="v_pat")
+        patente_sel = c_v4.text_input("Patente (Obligatoria)", placeholder="Ej: ABCD12", key="v_pat")
         st.markdown("---")
 
         tab1, tab2 = st.tabs(["📦 Productos", "🔧 Servicios"])
@@ -692,7 +696,6 @@ with col_centro[1]:
                 for i, cristal in enumerate(cristales_a_procesar):
                     desc_sugerida = cristal
                     
-                    # CORRECCIÓN: Generamos una ID única limpiando el nombre del cristal para que Streamlit no mezcle las cajas
                     key_id = cristal.replace(" ", "_").replace("/", "_").replace(".", "")
                     
                     if marca_final and marca_final not in ["--- Seleccione Marca ---", "--- AGREGAR OTRA MARCA ---", "---"]:
@@ -728,7 +731,7 @@ with col_centro[1]:
                             agregados += 1
                     
                     if agregados > 0:
-                        st.session_state.cristales_sel = [] # Vaciamos la botonera
+                        st.session_state.cristales_sel = [] 
                         guardar_borrador_nube()
                         st.rerun()
                     else:
@@ -775,34 +778,37 @@ with col_centro[1]:
             if 'presupuesto_generado' not in st.session_state:
                 if st.button("💾 GENERAR COTIZACIÓN", type="primary", use_container_width=True):
                     
-                    guardar_cliente_nuevo(
-                        st.session_state.get('rut_confirmado', ''), st.session_state.get('cliente_confirmado', ''), 
-                        st.session_state.get('dir_confirmada', ''), st.session_state.get('ciudad_confirmada', ''), 
-                        st.session_state.get('comuna_confirmada', ''), st.session_state.get('giro_confirmado', ''), 
-                        st.session_state.get('fono_confirmado', '')
-                    )
-                    
-                    correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_bruto))
-                    st.session_state['correlativo_temp'] = correlativo
-                    
-                    datos_cliente = {
-                        "nombre": st.session_state.get('cliente_confirmado', ''), "rut": st.session_state.get('rut_confirmado', ''),
-                        "direccion": st.session_state.get('dir_confirmada', ''), "ciudad": st.session_state.get('ciudad_confirmada', ''),
-                        "comuna": st.session_state.get('comuna_confirmada', ''), "giro": st.session_state.get('giro_confirmado', ''),
-                        "fono": st.session_state.get('fono_confirmado', ''), "pago": st.session_state.get('pago_confirmado', '')
-                    }
-                    
-                    datos_vehiculo = {
-                        "marca": marca_final if marca_final not in ["--- Seleccione Marca ---", "--- AGREGAR OTRA MARCA ---", "---"] else "",
-                        "modelo": modelo_final if modelo_final not in ["---", "--- AGREGAR OTRO MODELO ---"] else "",
-                        "anio": anio_final if anio_final not in ["---", "OTRO (MÁS ANTIGUO)"] else "",
-                        "patente": patente_sel
-                    }
-                    
-                    pdf_bytes = generar_pdf_pascual(datos_cliente, datos_vehiculo, st.session_state.items_productos, st.session_state.items_servicios)
-                    st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.get('cliente_confirmado', 'CLIENTE')}.pdf"}
-                    limpiar_borrador_nube() 
-                    st.rerun()
+                    if not patente_sel.strip():
+                        st.error("⛔ La Patente del vehículo es obligatoria para generar la cotización.")
+                    else:
+                        guardar_cliente_nuevo(
+                            st.session_state.get('rut_confirmado', ''), st.session_state.get('cliente_confirmado', ''), 
+                            st.session_state.get('dir_confirmada', ''), st.session_state.get('ciudad_confirmada', ''), 
+                            st.session_state.get('comuna_confirmada', ''), st.session_state.get('giro_confirmado', ''), 
+                            st.session_state.get('fono_confirmado', '')
+                        )
+                        
+                        correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_bruto))
+                        st.session_state['correlativo_temp'] = correlativo
+                        
+                        datos_cliente = {
+                            "nombre": st.session_state.get('cliente_confirmado', ''), "rut": st.session_state.get('rut_confirmado', ''),
+                            "direccion": st.session_state.get('dir_confirmada', ''), "ciudad": st.session_state.get('ciudad_confirmada', ''),
+                            "comuna": st.session_state.get('comuna_confirmada', ''), "giro": st.session_state.get('giro_confirmado', ''),
+                            "fono": st.session_state.get('fono_confirmado', ''), "pago": st.session_state.get('pago_confirmado', '')
+                        }
+                        
+                        datos_vehiculo = {
+                            "marca": marca_final if marca_final not in ["--- Seleccione Marca ---", "--- AGREGAR OTRA MARCA ---", "---"] else "",
+                            "modelo": modelo_final if modelo_final not in ["---", "--- AGREGAR OTRO MODELO ---"] else "",
+                            "anio": anio_final if anio_final not in ["---", "OTRO (MÁS ANTIGUO)"] else "",
+                            "patente": formato_patente_chilena(patente_sel)
+                        }
+                        
+                        pdf_bytes = generar_pdf_pascual(datos_cliente, datos_vehiculo, st.session_state.items_productos, st.session_state.items_servicios)
+                        st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.get('cliente_confirmado', 'CLIENTE')}.pdf"}
+                        limpiar_borrador_nube() 
+                        st.rerun()
             else:
                 data = st.session_state['presupuesto_generado']
                 st.success(f"✅ Cotización N° {st.session_state.get('correlativo_temp', '')} generada.")
