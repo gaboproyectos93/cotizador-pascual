@@ -30,7 +30,46 @@ def conectar_google_sheets():
         return None
 
 # ==========================================
-# 2. RUT, CORRELATIVOS, CLIENTES Y BORRADORES
+# 2. BASE DE DATOS DE VEHÍCULOS (CHILE)
+# ==========================================
+BASE_VEHICULOS = {
+    "--- Seleccione Marca ---": ["---"],
+    "Chevrolet": ["Sail", "Spark", "Tracker", "Colorado", "Silverado", "D-Max", "Captiva", "Onix", "Groove", "Spin", "N300", "Optra"],
+    "Toyota": ["Yaris", "Hilux", "RAV4", "Corolla", "Auris", "4Runner", "Fortuner", "Land Cruiser", "Prius", "Rush", "Urban Cruiser"],
+    "Hyundai": ["Accent", "Tucson", "Santa Fe", "Elantra", "Creta", "Grand i10", "H-1", "Porter", "Venue", "Kona", "Ioniq"],
+    "Kia": ["Morning", "Rio", "Cerato", "Sportage", "Sorento", "Frontier", "Soluto", "Sonet", "Niro", "Carnival", "Carens"],
+    "Nissan": ["Versa", "Sentra", "Qashqai", "X-Trail", "NP300", "Navara", "Kicks", "March", "Pathfinder", "Terrano", "Tiida"],
+    "Suzuki": ["Swift", "Baleno", "Vitara", "Grand Nomade", "Jimny", "Dzire", "S-Presso", "Ertiga", "Celerio", "Alto", "S-Cross"],
+    "Peugeot": ["208", "2008", "308", "3008", "5008", "Partner", "Boxer", "Expert", "Rifter"],
+    "Ford": ["Ranger", "F-150", "Territory", "Escape", "Explorer", "Edge", "Transit", "Ecosport", "Puma"],
+    "Mazda": ["Mazda 2", "Mazda 3", "Mazda 6", "CX-3", "CX-30", "CX-5", "CX-9", "BT-50"],
+    "MG": ["ZS", "ZX", "HS", "RX5", "MG3", "MG5", "MG6", "Marvel R"],
+    "Chery": ["Tiggo 2", "Tiggo 3", "Tiggo 4", "Tiggo 7", "Tiggo 8", "Arrizo 5", "IQ"],
+    "Changan": ["CS15", "CS35", "CS55", "CX70", "Hunter", "Alsvin", "UNI-T", "UNI-K"],
+    "Jac": ["S2", "S3", "JS2", "JS3", "JS4", "JS8", "T8", "T6", "Sunray", "Refine"],
+    "Renault": ["Clio", "Symbol", "Captur", "Duster", "Koleos", "Kangoo", "Oroch", "Alaskan", "Megane"],
+    "Mitsubishi": ["L200", "Outlander", "Eclipse Cross", "Montero", "ASX", "Mirage", "Katana"],
+    "Subaru": ["XV", "Forester", "Outback", "Crosstrek", "Impreza", "WRX", "Legacy"],
+    "Honda": ["Civic", "CR-V", "HR-V", "Pilot", "City", "Accord", "WR-V", "Fit"],
+    "Volkswagen": ["Gol", "Polo", "Virtus", "Nivus", "T-Cross", "Taos", "Tiguan", "Amarok", "Saveiro", "Vento"],
+    "Fiat": ["Mobi", "Argo", "Cronos", "Pulse", "Fiorino", "Strada", "Ducato", "Uno"],
+    "BMW": ["Serie 1", "Serie 2", "Serie 3", "X1", "X2", "X3", "X4", "X5"],
+    "Mercedes-Benz": ["Clase A", "Clase C", "GLA", "GLC", "GLE", "Sprinter", "Vito", "Citan"],
+    "Audi": ["A1", "A3", "A4", "Q2", "Q3", "Q5", "Q7"],
+    "Volvo": ["XC40", "XC60", "XC90", "V40", "S60"],
+    "SsangYong": ["Tivoli", "Korando", "Rexton", "Musso", "Actyon", "Grand Musso"],
+    "Great Wall": ["Poer", "Wingle 5", "Wingle 7", "Haval H6", "Haval Jolion", "Voleex"],
+    "Maxus": ["T60", "T90", "G10", "D60", "Deliver 9"],
+    "Geely": ["Coolray", "Azkarra", "GX3", "Emgrand"],
+    "Citroën": ["C3", "C4", "C5 Aircross", "Berlingo", "Jumper", "Spacetourer"],
+    "Jeep": ["Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler", "Gladiator"],
+    "Mahindra": ["L200", "Pik Up", "Scorpio", "XUV500", "KUV100"],
+    "Ram": ["700", "1000", "1500", "2500", "ProMaster"],
+    "Otra Marca": ["Otro Modelo (Escribir Manualmente)"]
+}
+
+# ==========================================
+# 3. RUT, CORRELATIVOS, CLIENTES Y BORRADORES
 # ==========================================
 def formato_rut_chileno(rut):
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
@@ -149,7 +188,7 @@ def limpiar_borrador_nube():
     except Exception: pass
 
 # ==========================================
-# 3. DATOS DE LA EMPRESA Y ESTILOS
+# 4. DATOS DE LA EMPRESA Y ESTILOS
 # ==========================================
 EMPRESA_NOMBRE = "LILY ISABEL UNDA CONTRERAS"
 EMPRESA_GIRO = "VTA, FABRIC Y REPARAC. DE PARABRISAS Y SUS ACCESORIOS"
@@ -164,7 +203,7 @@ st.markdown(f"""
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     .stButton > button[kind="primary"] {{ background-color: {COLOR_HEX} !important; border-color: {COLOR_HEX} !important; color: white !important; font-weight: bold; padding: 10px; }}
     .stButton > button[kind="primary"]:hover {{ background-color: #E65A0D !important; border-color: #E65A0D !important; }}
-    #MainMenu {{ visibility: hidden !important; }} footer {{ display: none !important; }} header {{ display: none !important; }}
+    footer {{ display: none !important; }} 
 </style>
 """, unsafe_allow_html=True)
 
@@ -185,7 +224,7 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 4. CLASE PDF (FORMATO OPEN TPV)
+# 5. CLASE PDF (DISEÑO TABULAR ORDENADO)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -203,6 +242,7 @@ class PDF(FPDF):
         self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
         self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
 
+        # Cuadro Superior Derecho (Cotización)
         self.set_xy(140, 15)
         self.set_font('Arial', 'B', 16)
         self.cell(60, 8, "COTIZACIÓN", 0, 1, 'C')
@@ -220,75 +260,94 @@ def generar_pdf_pascual(datos_cliente, productos, servicios):
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
     pdf.set_y(45)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Señor(es)", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Fecha Emision", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {datetime.now().strftime('%d/%m/%Y')}", 0, 1)
-
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Rut", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente.get('fono', ''))}", 0, 1)
-
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Dirección", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('direccion', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Forma de Pago", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente.get('pago', '')).upper()}", 0, 1)
-
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Ciudad", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, f": {str(datos_cliente.get('comuna', '')).upper()}", 0, 1)
-
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Giro", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 5, f": {str(datos_cliente.get('giro', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 5, "O/C", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, ": ", 0, 1)
     
-    pdf.set_font('Arial', 'B', 9); pdf.cell(20, 5, "Vendedor", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(0, 5, ": ANA MARIA RIQUELME", 0, 1)
-    pdf.ln(5)
-
-    pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(240, 240, 240)
-    pdf.cell(100, 6, "Descripcion", 1, 0, 'L', 1)
-    pdf.cell(30, 6, "Valor", 1, 0, 'R', 1)
-    pdf.cell(15, 6, "Cant.", 1, 0, 'C', 1)
-    pdf.cell(15, 6, "Desc.", 1, 0, 'C', 1)
-    pdf.cell(30, 6, "Total", 1, 1, 'R', 1)
+    # --- 1. TABLA DATOS DEL CLIENTE ---
+    pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
+    pdf.cell(190, 6, "  DATOS DEL CLIENTE", 1, 1, 'L', 1)
     
-    pdf.set_font('Arial', '', 9)
+    pdf.set_font('Arial', 'B', 9)
+    # Fila 1
+    pdf.cell(25, 6, " Señor(es)", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
+    # Fila 2
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " RUT", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
+    # Fila 3
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Dirección", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('direccion', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
+    # Fila 4
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Ciudad", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
+    # Fila 5
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Giro", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(90, 6, f": {str(datos_cliente.get('giro', '')).upper()}", 'B', 0)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Vendedor", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(50, 6, ": ANA MARIA RIQUELME", 'R,B', 1)
+    
+    pdf.ln(6)
+
+    # --- 2. TABLA DETALLE DE COTIZACIÓN ---
+    pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(230, 230, 230)
+    pdf.cell(100, 7, "Descripción", 1, 0, 'C', 1)
+    pdf.cell(30, 7, "Valor Unit.", 1, 0, 'C', 1)
+    pdf.cell(15, 7, "Cant.", 1, 0, 'C', 1)
+    pdf.cell(15, 7, "Desc.", 1, 0, 'C', 1)
+    pdf.cell(30, 7, "Total", 1, 1, 'C', 1)
+    
     total_general = 0
 
+    def imprimir_fila(desc, unitario, cant, total):
+        # Usamos multicell para la descripción por si el texto es muy largo
+        x = pdf.get_x(); y = pdf.get_y()
+        pdf.multi_cell(100, 6, desc, 1, 'L')
+        h = pdf.get_y() - y # Altura dinámica calculada
+        pdf.set_xy(x + 100, y)
+        pdf.cell(30, h, format_clp(unitario), 1, 0, 'R')
+        pdf.cell(15, h, str(cant), 1, 0, 'C')
+        pdf.cell(15, h, "$0", 1, 0, 'C')
+        pdf.cell(30, h, format_clp(total), 1, 1, 'R')
+        pdf.set_xy(x, y + h) # Bajamos a la siguiente fila
+
     if productos:
-        pdf.set_font('Arial', 'B', 8); pdf.cell(0, 6, "--- PRODUCTOS / REPUESTOS ---", 0, 1, 'L'); pdf.set_font('Arial', '', 9)
+        pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
+        pdf.cell(190, 5, "  PRODUCTOS / REPUESTOS", 1, 1, 'L', 1)
+        pdf.set_font('Arial', '', 9)
         for item in productos:
-            pdf.cell(100, 6, item['Descripción'].upper(), 0, 0, 'L')
-            pdf.cell(30, 6, format_clp(item['Unitario']), 0, 0, 'R')
-            pdf.cell(15, 6, str(item['Cantidad']), 0, 0, 'C')
-            pdf.cell(15, 6, "$0", 0, 0, 'C')
-            pdf.cell(30, 6, format_clp(item['Total']), 0, 1, 'R')
+            imprimir_fila(item['Descripción'].upper(), item['Unitario'], item['Cantidad'], item['Total'])
             total_general += item['Total']
             
     if servicios:
-        pdf.set_font('Arial', 'B', 8); pdf.cell(0, 6, "--- MANO DE OBRA / SERVICIOS ---", 0, 1, 'L'); pdf.set_font('Arial', '', 9)
+        pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
+        pdf.cell(190, 5, "  MANO DE OBRA / SERVICIOS", 1, 1, 'L', 1)
+        pdf.set_font('Arial', '', 9)
         for item in servicios:
-            pdf.cell(100, 6, item['Descripción'].upper(), 0, 0, 'L')
-            pdf.cell(30, 6, format_clp(item['Unitario']), 0, 0, 'R')
-            pdf.cell(15, 6, str(item['Cantidad']), 0, 0, 'C')
-            pdf.cell(15, 6, "$0", 0, 0, 'C')
-            pdf.cell(30, 6, format_clp(item['Total']), 0, 1, 'R')
+            imprimir_fila(item['Descripción'].upper(), item['Unitario'], item['Cantidad'], item['Total'])
             total_general += item['Total']
 
+    # --- 3. CAJA DE TOTALES TABULAR ---
     neto = total_general / 1.19
     iva = total_general - neto
     
-    pdf.ln(10)
-    pdf.set_x(130); pdf.set_font('Arial', 'B', 9)
-    pdf.cell(30, 5, "SUB TOTAL", 0, 0, 'L'); pdf.cell(5, 5, ":", 0, 0, 'C'); pdf.cell(25, 5, format_clp(total_general), 0, 1, 'R')
-    pdf.set_x(130); pdf.set_font('Arial', '', 9)
-    pdf.cell(30, 5, "DESC. GRAL", 0, 0, 'L'); pdf.cell(5, 5, ":", 0, 0, 'C'); pdf.cell(25, 5, "0", 0, 1, 'R')
+    pdf.ln(5)
     pdf.set_x(130)
-    pdf.cell(30, 5, "NETO", 0, 0, 'L'); pdf.cell(5, 5, ":", 0, 0, 'C'); pdf.cell(25, 5, format_clp(neto), 0, 1, 'R')
+    pdf.set_font('Arial', 'B', 9)
+    pdf.cell(35, 6, "SUB TOTAL", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, format_clp(total_general), 1, 1, 'R')
+    
     pdf.set_x(130)
-    pdf.cell(30, 5, "I.V.A. (19%)", 0, 0, 'L'); pdf.cell(5, 5, ":", 0, 0, 'C'); pdf.cell(25, 5, format_clp(iva), 0, 1, 'R')
+    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "DESCUENTO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, "$0", 1, 1, 'R')
+    
     pdf.set_x(130)
-    pdf.cell(30, 5, "EXENTO", 0, 0, 'L'); pdf.cell(5, 5, ":", 0, 0, 'C'); pdf.cell(25, 5, "0", 0, 1, 'R')
-    pdf.set_x(130); pdf.set_font('Arial', 'B', 10)
-    pdf.cell(30, 6, "TOTAL", 0, 0, 'L'); pdf.cell(5, 6, ":", 0, 0, 'C'); pdf.cell(25, 6, format_clp(total_general), 0, 1, 'R')
+    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "NETO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, format_clp(neto), 1, 1, 'R')
+    
+    pdf.set_x(130)
+    pdf.set_font('Arial', 'B', 9); pdf.cell(35, 6, "I.V.A. (19%)", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(35, 6, format_clp(iva), 1, 1, 'R')
+    
+    pdf.set_x(130)
+    pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
+    pdf.cell(35, 8, "TOTAL", 1, 0, 'L', 1); pdf.cell(35, 8, format_clp(total_general), 1, 1, 'R', 1)
 
     return pdf.output(dest='S').encode('latin-1')
 
 # ==========================================
-# 5. UI PRINCIPAL (FLUJO PASO A PASO)
+# 6. UI PRINCIPAL (FLUJO PASO A PASO)
 # ==========================================
 if 'check_borrador' not in st.session_state:
     st.session_state.check_borrador = True
@@ -357,7 +416,6 @@ with col_centro[1]:
         c_f1, c_f2 = st.columns(2)
         contacto_fono = c_f1.text_input("Teléfono", value=def_fono)
         
-        # --- NUEVAS OPCIONES DE PAGO ---
         opciones_pago = [
             "Transferencia Electrónica",
             "Efectivo / Contado",
@@ -385,7 +443,6 @@ with col_centro[1]:
                 guardar_borrador_nube() 
                 st.rerun()
 
-        # --- MÓDULO DE ADMINISTRACIÓN DE CLIENTES ---
         st.markdown("---")
         with st.expander("⚙️ Administrar Base de Datos de Clientes"):
             st.caption("Modifica o elimina clientes guardados.")
@@ -432,22 +489,46 @@ with col_centro[1]:
         tab1, tab2 = st.tabs(["📦 Productos", "🔧 Servicios"])
         
         with tab1:
+            st.markdown("##### 🚗 Especificaciones del Vehículo (Opcional)")
+            with st.container():
+                c_v1, c_v2, c_v3 = st.columns([2, 2, 1])
+                marca_sel = c_v1.selectbox("Marca", list(BASE_VEHICULOS.keys()), key="v_marca")
+                modelo_sel = c_v2.selectbox("Modelo", BASE_VEHICULOS.get(marca_sel, ["---"]), key="v_modelo")
+                
+                lista_anios = ["---"] + list(range(2027, 1979, -1))
+                anio_sel = c_v3.selectbox("Año", lista_anios, key="v_anio")
+
+                c_v4, c_v5 = st.columns(2)
+                camara_sel = c_v4.radio("¿Tiene Cámara?", ["No", "Sí"], horizontal=True, key="v_cam")
+                sensor_sel = c_v5.radio("¿Sensor de Lluvia?", ["No", "Sí"], horizontal=True, key="v_sen")
+
+            desc_sugerida = ""
+            if marca_sel != "--- Seleccione Marca ---":
+                desc_sugerida = f"Parabrisas {marca_sel}"
+                if modelo_sel != "---": desc_sugerida += f" {modelo_sel}"
+                if anio_sel != "---": desc_sugerida += f" {anio_sel}"
+                if camara_sel == "Sí": desc_sugerida += " C/Cámara"
+                if sensor_sel == "Sí": desc_sugerida += " C/Sensor"
+
+            st.markdown("##### 🛒 Detalle del Producto")
             with st.container():
                 col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
-                d_p = col_p1.text_input("Descripción del Producto", placeholder="Ej: Parabrisas...")
+                d_p = col_p1.text_input("Descripción del Producto", value=desc_sugerida, placeholder="Ej: Parabrisas...")
                 q_p = col_p2.number_input("Cant.", min_value=1, value=1, key="q_prod")
                 p_p = col_p3.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_prod")
                 
-                if st.button("➕ Agregar Producto", use_container_width=True):
+                if st.button("➕ Agregar Producto al Presupuesto", use_container_width=True):
                     if d_p and p_p > 0:
                         st.session_state.items_productos.append({"Descripción": d_p, "Cantidad": q_p, "Unitario": p_p, "Total": p_p * q_p})
                         guardar_borrador_nube(); st.rerun()
             
             if st.session_state.items_productos:
+                st.markdown("---")
                 for item in st.session_state.items_productos: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
                 if st.button("🗑️ Borrar Productos"): st.session_state.items_productos = []; guardar_borrador_nube(); st.rerun()
 
         with tab2:
+            st.markdown("##### 🔧 Detalle de Mano de Obra")
             with st.container():
                 col_s1, col_s2, col_s3 = st.columns([3, 1, 1])
                 d_s = col_s1.text_input("Descripción del Servicio", placeholder="Ej: Instalación...")
@@ -460,6 +541,7 @@ with col_centro[1]:
                         guardar_borrador_nube(); st.rerun()
                         
             if st.session_state.items_servicios:
+                st.markdown("---")
                 for item in st.session_state.items_servicios: st.text(f"• {item['Cantidad']}x {item['Descripción']} | {format_clp(item['Total'])}")
                 if st.button("🗑️ Borrar Servicios"): st.session_state.items_servicios = []; guardar_borrador_nube(); st.rerun()
 
