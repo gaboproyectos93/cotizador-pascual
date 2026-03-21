@@ -74,14 +74,12 @@ BASE_VEHICULOS = {
 def formato_rut_chileno(rut):
     rut_limpio = re.sub(r'[^0-9Kk]', '', str(rut).upper())
     if len(rut_limpio) <= 1: return rut_limpio
-    
     cuerpo = rut_limpio[:-1]
     dv = rut_limpio[-1]
     try:
         cuerpo_fmt = f"{int(cuerpo):,}".replace(",", ".")
         return f"{cuerpo_fmt}-{dv}"
-    except:
-        return rut_limpio
+    except: return rut_limpio
 
 def obtener_y_registrar_correlativo(cliente, total):
     client = conectar_google_sheets()
@@ -92,11 +90,9 @@ def obtener_y_registrar_correlativo(cliente, total):
             except:
                 worksheet_hist = spreadsheet.add_worksheet(title="Historial", rows="1000", cols="4")
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
-            
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
             correlativo_str = str(1650 + numero_actual)
-            
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
@@ -316,7 +312,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
 
     pdf.ln(6)
 
-    # --- 3. TABLA DETALLE DE COTIZACIÓN (Sin columna de cantidad) ---
+    # --- 3. TABLA DETALLE DE COTIZACIÓN ---
     pdf.set_font('Arial', 'B', 9); pdf.set_fill_color(230, 230, 230)
     pdf.cell(130, 7, "Descripción", 1, 0, 'C', 1)
     pdf.cell(30, 7, "Descuento", 1, 0, 'C', 1)
@@ -634,13 +630,19 @@ with col_centro[1]:
             with st.container():
                 for i, cristal in enumerate(cristales_a_procesar):
                     desc_sugerida = cristal
+                    key_id = cristal.replace(" ", "_").replace("/", "_")
+                    
                     if "PARABRISAS" in cristal:
-                        if camara_sel == "Sí": desc_sugerida += " C/CÁMARA"
-                        if sensor_sel == "Sí": desc_sugerida += " C/SENSOR"
+                        if camara_sel == "Sí": 
+                            desc_sugerida += " C/CÁMARA"
+                            key_id += "_cam"
+                        if sensor_sel == "Sí": 
+                            desc_sugerida += " C/SENSOR"
+                            key_id += "_sen"
                     
                     col_p1, col_p2 = st.columns([3, 1])
-                    d_p = col_p1.text_input(f"Descripción Producto {i+1}", value=desc_sugerida, key=f"d_p_{i}")
-                    p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key=f"p_p_{i}")
+                    d_p = col_p1.text_input(f"Descripción Producto {i+1}", value=desc_sugerida, key=f"d_p_{key_id}")
+                    p_p = col_p2.number_input("Valor c/IVA ($)", min_value=0, step=5000, key=f"p_p_{key_id}")
                     productos_temp.append({"desc": d_p, "precio": p_p})
                 
                 if st.button("➕ Agregar Producto(s) al Presupuesto", use_container_width=True):
