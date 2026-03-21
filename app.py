@@ -130,11 +130,32 @@ def obtener_clientes():
     if client:
         try:
             sheet = client.open(NOMBRE_HOJA_GOOGLE)
-            try: ws = sheet.worksheet("Clientes")
+            try: 
+                ws = sheet.worksheet("Clientes")
+                
+                # --- AUTO-REPARADOR DE BASE DE DATOS ---
+                encabezados = ws.row_values(1)
+                # Si detecta que la columna 7 no es 'Contacto' (modelo antiguo), lo repara en la nube
+                if len(encabezados) < 8 or encabezados[6] != "Contacto":
+                    ws.update_acell('G1', 'Contacto')
+                    ws.update_acell('H1', 'Fono')
             except:
                 ws = sheet.add_worksheet(title="Clientes", rows="100", cols="8")
                 ws.append_row(["RUT", "Nombre", "Direccion", "Ciudad", "Comuna", "Giro", "Contacto", "Fono"])
-            return ws.get_all_records()
+            
+            registros = ws.get_all_records()
+            
+            # Limpieza dinámica en vivo
+            for r in registros:
+                contacto = str(r.get('Contacto', '')).strip()
+                fono = str(r.get('Fono', '')).strip()
+                
+                # Si la casilla contacto tiene puros números (teléfono mal asignado) y fono está vacío
+                if contacto and not fono and re.match(r'^[\d\+ \-]+$', contacto):
+                    r['Fono'] = contacto
+                    r['Contacto'] = ""
+                    
+            return registros
         except Exception: pass
     return []
 
@@ -466,11 +487,14 @@ with col_centro[1]:
             rut_buscado = sel_cli.split(" | ")[0]
             cli_data = next((c for c in clientes_db if str(c['RUT']) == rut_buscado), None)
             if cli_data:
-                def_nombre = str(cli_data['Nombre']); def_rut = str(cli_data['RUT'])
-                def_dir = str(cli_data['Direccion']); def_ciu = str(cli_data['Ciudad'])
-                def_com = str(cli_data['Comuna']); def_giro = str(cli_data['Giro'])
+                def_nombre = str(cli_data.get('Nombre', ''))
+                def_rut = str(cli_data.get('RUT', ''))
+                def_dir = str(cli_data.get('Direccion', ''))
+                def_ciu = str(cli_data.get('Ciudad', ''))
+                def_com = str(cli_data.get('Comuna', ''))
+                def_giro = str(cli_data.get('Giro', ''))
                 def_contacto = str(cli_data.get('Contacto', ''))
-                def_fono = str(cli_data['Fono'])
+                def_fono = str(cli_data.get('Fono', ''))
                 st.success("✅ Datos del cliente cargados exitosamente.")
 
         st.markdown("---")
@@ -522,14 +546,14 @@ with col_centro[1]:
                 datos_cli_admin = next((c for c in clientes_db if str(c['RUT']) == rut_sel_admin), None)
                 
                 if datos_cli_admin:
-                    n_rut = st.text_input("RUT", value=str(datos_cli_admin['RUT']), key="e_rut")
-                    n_nom = st.text_input("Razón Social", value=str(datos_cli_admin['Nombre']), key="e_nom")
-                    n_dir = st.text_input("Dirección", value=str(datos_cli_admin['Direccion']), key="e_dir")
-                    n_ciu = st.text_input("Ciudad", value=str(datos_cli_admin['Ciudad']), key="e_ciu")
-                    n_com = st.text_input("Comuna", value=str(datos_cli_admin['Comuna']), key="e_com")
-                    n_gir = st.text_input("Giro", value=str(datos_cli_admin['Giro']), key="e_gir")
+                    n_rut = st.text_input("RUT", value=str(datos_cli_admin.get('RUT', '')), key="e_rut")
+                    n_nom = st.text_input("Razón Social", value=str(datos_cli_admin.get('Nombre', '')), key="e_nom")
+                    n_dir = st.text_input("Dirección", value=str(datos_cli_admin.get('Direccion', '')), key="e_dir")
+                    n_ciu = st.text_input("Ciudad", value=str(datos_cli_admin.get('Ciudad', '')), key="e_ciu")
+                    n_com = st.text_input("Comuna", value=str(datos_cli_admin.get('Comuna', '')), key="e_com")
+                    n_gir = st.text_input("Giro", value=str(datos_cli_admin.get('Giro', '')), key="e_gir")
                     n_con = st.text_input("Nombre Contacto", value=str(datos_cli_admin.get('Contacto', '')), key="e_con")
-                    n_fon = st.text_input("Teléfono", value=str(datos_cli_admin['Fono']), key="e_fon")
+                    n_fon = st.text_input("Teléfono", value=str(datos_cli_admin.get('Fono', '')), key="e_fon")
                     
                     col_ed1, col_ed2 = st.columns(2)
                     if col_ed1.button("💾 Guardar Cambios", use_container_width=True):
