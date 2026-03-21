@@ -163,7 +163,7 @@ def guardar_borrador_nube():
         sheet = client.open(NOMBRE_HOJA_GOOGLE)
         try: ws = sheet.worksheet("Borrador")
         except: ws = sheet.add_worksheet(title="Borrador", rows="2", cols="2")
-        datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k.endswith('_confirmada') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios' or k == 'cristal_sel'}
+        datos = {k: v for k, v in st.session_state.items() if k.endswith('_confirmado') or k.endswith('_confirmada') or k == 'paso_actual' or k == 'items_productos' or k == 'items_servicios' or k == 'cristal_sel' or k == 'servicio_desc'}
         ws.update_acell('A1', json.dumps(datos))
     except Exception: pass
 
@@ -224,16 +224,21 @@ def encontrar_imagen(nombre_base):
     return None
 
 # ==========================================
-# 5. LÓGICA DE TECLADO DE AUTO
+# 5. LÓGICA DE TECLADO RÁPIDO
 # ==========================================
 if 'cristal_sel' not in st.session_state:
     st.session_state.cristal_sel = "PARABRISAS"
+if 'servicio_desc' not in st.session_state:
+    st.session_state.servicio_desc = "INSTALACIÓN DE CRISTAL"
 
 def set_cristal(cristal):
     st.session_state.cristal_sel = cristal
+    
+def set_servicio(servicio):
+    st.session_state.servicio_desc = servicio
 
 # ==========================================
-# 6. CLASE PDF (DISEÑO TABULAR ORDENADO)
+# 6. CLASE PDF (DISEÑO TABULAR ORDENADO + CORRECCIONES)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -244,7 +249,7 @@ class PDF(FPDF):
         logo_path = encontrar_imagen("logo") 
         if logo_path: self.image(logo_path, x=10, y=8, w=50)
         
-        self.set_xy(10, 40) 
+        self.set_xy(10, 40)
         self.set_font('Arial', 'B', 9); self.cell(100, 4, EMPRESA_NOMBRE, 0, 1, 'L')
         self.set_font('Arial', '', 8)
         self.cell(100, 4, EMPRESA_GIRO, 0, 1, 'L')
@@ -363,6 +368,7 @@ if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 
 col_centro = st.columns([1, 2, 1])
 
+# --- CABECERA PRINCIPAL ---
 with col_centro[1]:
     c_logo, c_btn = st.columns([3, 1], vertical_alignment="center")
     with c_logo:
@@ -419,7 +425,13 @@ with col_centro[1]:
         c_f1, c_f2 = st.columns(2)
         contacto_fono = c_f1.text_input("Teléfono", value=def_fono)
         
-        opciones_pago = ["Transferencia Electrónica", "Efectivo / Contado", "Tarjeta (Débito/Crédito)", "Orden de Compra (O/C)", "Crédito Directo a 30 días"]
+        opciones_pago = [
+            "Transferencia Electrónica",
+            "Efectivo / Contado",
+            "Tarjeta (Débito/Crédito)",
+            "Orden de Compra (O/C)",
+            "Crédito Directo a 30 días"
+        ]
         condicion_pago = c_f2.selectbox("Forma de Pago", opciones_pago)
 
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
@@ -535,7 +547,6 @@ with col_centro[1]:
                 c_f1, c_f2, c_f3 = st.columns([1, 2, 1])
                 c_f2.button("🟩 PARABRISAS FRONTAL", use_container_width=True, on_click=set_cristal, args=("PARABRISAS",))
                 
-                # --- NUEVA BOTONERA PARA FURGÓN ---
                 c_d1, c_d2, c_d3, c_d4 = st.columns(4)
                 c_d1.button("Aleta D. Izq", use_container_width=True, on_click=set_cristal, args=("ALETA DEL. IZQ.",))
                 c_d2.button("Puerta D. Izq", use_container_width=True, on_click=set_cristal, args=("PUERTA DEL. IZQ.",))
@@ -626,10 +637,17 @@ with col_centro[1]:
                 if st.button("🗑️ Borrar Productos"): st.session_state.items_productos = []; guardar_borrador_nube(); st.rerun()
 
         with tab2:
+            st.markdown("##### ⚡ Servicios Frecuentes")
+            c_sf1, c_sf2, c_sf3, c_sf4 = st.columns(4)
+            c_sf1.button("Instalación", use_container_width=True, on_click=set_servicio, args=("INSTALACIÓN DE CRISTAL",))
+            c_sf2.button("Reparación Piquete", use_container_width=True, on_click=set_servicio, args=("REPARACIÓN DE PIQUETE",))
+            c_sf3.button("Polarizado", use_container_width=True, on_click=set_servicio, args=("SERVICIO DE POLARIZADO",))
+            c_sf4.button("Grabado Patentes", use_container_width=True, on_click=set_servicio, args=("GRABADO DE PATENTES",))
+            
             st.markdown("##### 🔧 Detalle de Mano de Obra")
             with st.container():
                 col_s1, col_s2, col_s3 = st.columns([3, 1, 1])
-                d_s = col_s1.text_input("Descripción del Servicio", placeholder="Ej: Instalación...")
+                d_s = col_s1.text_input("Descripción del Servicio", value=st.session_state.servicio_desc, placeholder="Ej: Instalación...")
                 q_s = col_s2.number_input("Cant.", min_value=1, value=1, key="q_serv")
                 p_s = col_s3.number_input("Valor c/IVA ($)", min_value=0, step=5000, key="p_serv")
                 
