@@ -117,7 +117,11 @@ def obtener_y_registrar_correlativo(cliente, total):
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
-            correlativo_str = str(1650 + numero_actual)
+            
+            # --- CONFIGURACIÓN DEL NÚMERO DE INICIO ---
+            NUMERO_INICIO = 1000 # Cambia este número al que Ana María necesite (ej: 0, 500, 2500)
+            correlativo_str = str(NUMERO_INICIO + numero_actual)
+            
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
