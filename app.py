@@ -306,14 +306,14 @@ class PDF(FPDF):
         self.set_y(-15); self.set_font('Arial', 'I', 8); self.set_text_color(150, 150, 150)
         self.cell(0, 5, "Documento generado por Sistema Pascual Parabrisas", 0, 1, 'L')
 
-def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
+def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, descuento_pct=0):
     pdf = PDF(correlativo=st.session_state.get('correlativo_temp', 'BORRADOR'))
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
     # --- VENDEDOR INDEPENDIENTE ---
     pdf.set_y(63)
     pdf.set_font('Arial', 'B', 9)
-    pdf.cell(190, 5, "VENDEDOR: ANA MARIA RIQUELME", 0, 1, 'R')
+    pdf.cell(190, 5, f"VENDEDOR: {str(datos_cliente.get('vendedor', '')).upper()}", 0, 1, 'R')
 
     # --- 1. TABLA DATOS DEL CLIENTE ---
     pdf.set_y(70) 
@@ -357,43 +357,54 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
     pdf.cell(30, 7, "Descuento", 1, 0, 'C', 1)
     pdf.cell(30, 7, "Total", 1, 1, 'C', 1)
     
-    total_general = 0
+    total_descuento_aplicado = 0
+    total_bruto_sin_desc = 0
 
     def imprimir_fila(desc, total):
         x = pdf.get_x(); y = pdf.get_y()
         pdf.multi_cell(130, 6, desc, 1, 'L')
         h = pdf.get_y() - y 
         pdf.set_xy(x + 130, y)
-        pdf.cell(30, h, "$0", 1, 0, 'C')
-        pdf.cell(30, h, format_clp(total), 1, 1, 'R')
+        
+        monto_desc_item = total * (descuento_pct / 100.0)
+        total_final_item = total - monto_desc_item
+        
+        pdf.cell(30, h, format_clp(monto_desc_item), 1, 0, 'C')
+        pdf.cell(30, h, format_clp(total_final_item), 1, 1, 'R')
         pdf.set_xy(x, y + h)
+        return monto_desc_item
 
     if productos:
         pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
         pdf.cell(190, 5, "  PRODUCTOS / REPUESTOS", 1, 1, 'L', 1)
         pdf.set_font('Arial', '', 9)
         for item in productos:
-            imprimir_fila(item['Descripción'].upper(), item['Total'])
-            total_general += item['Total']
+            monto_desc = imprimir_fila(item['Descripción'].upper(), item['Total'])
+            total_descuento_aplicado += monto_desc
+            total_bruto_sin_desc += item['Total']
             
     if servicios:
         pdf.set_font('Arial', 'B', 8); pdf.set_fill_color(245, 245, 245)
         pdf.cell(190, 5, "  MANO DE OBRA / SERVICIOS", 1, 1, 'L', 1)
         pdf.set_font('Arial', '', 9)
         for item in servicios:
-            imprimir_fila(item['Descripción'].upper(), item['Total'])
-            total_general += item['Total']
+            monto_desc = imprimir_fila(item['Descripción'].upper(), item['Total'])
+            total_descuento_aplicado += monto_desc
+            total_bruto_sin_desc += item['Total']
 
-    neto = total_general / 1.19
-    iva = total_general - neto
+    total_final_a_pagar = total_bruto_sin_desc - total_descuento_aplicado
+    neto = total_final_a_pagar / 1.19
+    iva = total_final_a_pagar - neto
     
     pdf.ln(5)
     pdf.set_x(140)
     pdf.set_font('Arial', 'B', 9)
-    pdf.cell(30, 6, "SUB TOTAL", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(total_general), 1, 1, 'R')
+    pdf.cell(30, 6, "SUB TOTAL", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(total_bruto_sin_desc), 1, 1, 'R')
     
     pdf.set_x(140)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "DESCUENTO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, "$0", 1, 1, 'R')
+    pdf.set_font('Arial', 'B', 9)
+    texto_desc = f"DESC. ({descuento_pct}%)" if descuento_pct > 0 else "DESCUENTO"
+    pdf.cell(30, 6, texto_desc, 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(total_descuento_aplicado), 1, 1, 'R')
     
     pdf.set_x(140)
     pdf.set_font('Arial', 'B', 9); pdf.cell(30, 6, "NETO", 1, 0, 'L'); pdf.set_font('Arial', '', 9); pdf.cell(30, 6, format_clp(neto), 1, 1, 'R')
@@ -403,7 +414,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios):
     
     pdf.set_x(140)
     pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
-    pdf.cell(30, 8, "TOTAL", 1, 0, 'L', 1); pdf.cell(30, 8, format_clp(total_general), 1, 1, 'R', 1)
+    pdf.cell(30, 8, "TOTAL", 1, 0, 'L', 1); pdf.cell(30, 8, format_clp(total_final_a_pagar), 1, 1, 'R', 1)
 
     return pdf.output(dest='S').encode('latin-1')
 
@@ -475,12 +486,14 @@ with col_centro[1]:
         
         giro = st.text_input("Giro Comercial", value=def_giro, placeholder="Ej: Transporte de Carga")
         
-        c_f1, c_f2, c_f3 = st.columns(3)
+        c_f1, c_f2 = st.columns(2)
         contacto_nombre = c_f1.text_input("Nombre Contacto", value=def_contacto, placeholder="Ej: Juan Pérez")
         contacto_fono = c_f2.text_input("Teléfono", value=def_fono)
         
+        c_p1, c_p2 = st.columns(2)
         opciones_pago = ["Transferencia Electrónica", "Efectivo / Contado", "Tarjeta (Débito/Crédito)", "Orden de Compra (O/C)", "Crédito Directo a 30 días"]
-        condicion_pago = c_f3.selectbox("Forma de Pago", opciones_pago)
+        condicion_pago = c_p1.selectbox("Forma de Pago", opciones_pago)
+        vendedor_nombre = c_p2.text_input("Vendedor", value="ANA MARIA RIQUELME", placeholder="Nombre del vendedor")
 
         if st.button("🚀 CONTINUAR A DETALLE", type="primary", use_container_width=True):
             if not cliente_final: st.error("⛔ Falta el nombre del cliente.")
@@ -495,6 +508,7 @@ with col_centro[1]:
                 st.session_state.contacto_confirmado = contacto_nombre.upper()
                 st.session_state.fono_confirmado = contacto_fono
                 st.session_state.pago_confirmado = condicion_pago
+                st.session_state.vendedor_confirmado = vendedor_nombre.upper()
                 st.session_state.paso_actual = 2
                 guardar_borrador_nube() 
                 st.rerun()
@@ -775,7 +789,10 @@ with col_centro[1]:
 
         if total_bruto > 0:
             st.markdown("---")
-            st.subheader(f"📊 TOTAL COTIZACIÓN: {format_clp(total_bruto)}")
+            c_tot1, c_tot2 = st.columns([1, 1])
+            descuento_pct = c_tot1.number_input("Descuento Global (%)", min_value=0, max_value=100, value=0, step=1)
+            total_final_vista = total_bruto * (1 - (descuento_pct / 100.0))
+            c_tot2.subheader(f"📊 TOTAL COTIZACIÓN: {format_clp(total_final_vista)}")
 
             if 'presupuesto_generado' not in st.session_state:
                 if st.button("💾 GENERAR COTIZACIÓN", type="primary", use_container_width=True):
@@ -790,7 +807,7 @@ with col_centro[1]:
                             st.session_state.get('contacto_confirmado', ''), st.session_state.get('fono_confirmado', '')
                         )
                         
-                        correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_bruto))
+                        correlativo = obtener_y_registrar_correlativo(st.session_state.get('cliente_confirmado', 'CLIENTE'), format_clp(total_final_vista))
                         st.session_state['correlativo_temp'] = correlativo
                         
                         datos_cliente = {
@@ -798,7 +815,7 @@ with col_centro[1]:
                             "direccion": st.session_state.get('dir_confirmada', ''), "ciudad": st.session_state.get('ciudad_confirmada', ''),
                             "comuna": st.session_state.get('comuna_confirmada', ''), "giro": st.session_state.get('giro_confirmado', ''),
                             "contacto": st.session_state.get('contacto_confirmado', ''), "fono": st.session_state.get('fono_confirmado', ''), 
-                            "pago": st.session_state.get('pago_confirmado', '')
+                            "pago": st.session_state.get('pago_confirmado', ''), "vendedor": st.session_state.get('vendedor_confirmado', '')
                         }
                         
                         datos_vehiculo = {
@@ -808,7 +825,7 @@ with col_centro[1]:
                             "patente": formato_patente_chilena(patente_sel)
                         }
                         
-                        pdf_bytes = generar_pdf_pascual(datos_cliente, datos_vehiculo, st.session_state.items_productos, st.session_state.items_servicios)
+                        pdf_bytes = generar_pdf_pascual(datos_cliente, datos_vehiculo, st.session_state.items_productos, st.session_state.items_servicios, descuento_pct)
                         st.session_state['presupuesto_generado'] = {'pdf': pdf_bytes, 'nombre': f"Cotizacion_{correlativo}_{st.session_state.get('cliente_confirmado', 'CLIENTE')}.pdf"}
                         limpiar_borrador_nube() 
                         st.rerun()
