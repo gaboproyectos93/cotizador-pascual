@@ -117,11 +117,7 @@ def obtener_y_registrar_correlativo(cliente, total):
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
-            
-            # --- CONFIGURACIÓN DEL NÚMERO DE INICIO ---
-            NUMERO_INICIO = 1000 # Cambia este número al que Ana María necesite (ej: 0, 500, 2500)
-            correlativo_str = str(NUMERO_INICIO + numero_actual)
-            
+            correlativo_str = str(1650 + numero_actual)
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
@@ -258,7 +254,7 @@ def btn_type(cristal):
     return "primary" if cristal in st.session_state.cristales_sel else "secondary"
 
 # ==========================================
-# 6. CLASE PDF (DISEÑO TABULAR ORDENADO + DATOS DEL MÓVIL)
+# 6. CLASE PDF (DISEÑO TABULAR ORDENADO + DINÁMICO)
 # ==========================================
 class PDF(FPDF):
     def __init__(self, correlativo=""):
@@ -307,26 +303,76 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
     pdf.set_font('Arial', 'B', 9)
     pdf.cell(190, 5, f"VENDEDOR: {str(datos_cliente.get('vendedor', '')).upper()}", 0, 1, 'R')
 
+    # --- FUNCIONES DE FILAS DINÁMICAS (Para evitar desbordamientos de texto) ---
+    def fila_dinamica_cliente(lbl1, val1, lbl2, val2, is_last=False):
+        start_y = pdf.get_y()
+        
+        # Columna Izquierda
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_xy(10, start_y)
+        pdf.cell(25, 6, lbl1, 0, 0, 'L')
+        pdf.set_font('Arial', '', 9)
+        pdf.set_xy(35, start_y)
+        pdf.multi_cell(85, 6, f": {val1}", 0, 'L')
+        y_left = pdf.get_y()
+        
+        # Columna Derecha
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_xy(120, start_y)
+        pdf.cell(28, 6, lbl2, 0, 0, 'L')
+        pdf.set_font('Arial', '', 9)
+        pdf.set_xy(148, start_y)
+        pdf.multi_cell(52, 6, f": {val2}", 0, 'L')
+        y_right = pdf.get_y()
+        
+        # Obtenemos la altura máxima que ocupó la fila
+        max_y = max(y_left, y_right)
+        
+        # Dibujamos las líneas de los bordes externos de la tabla
+        pdf.line(10, start_y, 10, max_y)   # Borde Izquierdo
+        pdf.line(200, start_y, 200, max_y) # Borde Derecho
+        if is_last:
+            pdf.line(10, max_y, 200, max_y) # Borde Inferior solo si es la última
+            
+        pdf.set_xy(10, max_y)
+
+    def fila_dinamica_vehiculo(lbl1, val1, lbl2, val2, is_last=False):
+        start_y = pdf.get_y()
+        
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_xy(10, start_y)
+        pdf.cell(25, 6, lbl1, 0, 0, 'L')
+        pdf.set_font('Arial', '', 9)
+        pdf.set_xy(35, start_y)
+        pdf.multi_cell(70, 6, f": {val1}", 0, 'L')
+        y_left = pdf.get_y()
+        
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_xy(105, start_y)
+        pdf.cell(25, 6, lbl2, 0, 0, 'L')
+        pdf.set_font('Arial', '', 9)
+        pdf.set_xy(130, start_y)
+        pdf.multi_cell(70, 6, f": {val2}", 0, 'L')
+        y_right = pdf.get_y()
+        
+        max_y = max(y_left, y_right)
+        pdf.line(10, start_y, 10, max_y)
+        pdf.line(200, start_y, 200, max_y)
+        if is_last:
+            pdf.line(10, max_y, 200, max_y)
+            
+        pdf.set_xy(10, max_y)
+
     # --- 1. TABLA DATOS DEL CLIENTE ---
     pdf.set_y(70) 
     pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
     pdf.cell(190, 6, "  DATOS DEL CLIENTE", 1, 1, 'L', 1)
     
-    pdf.set_font('Arial', 'B', 9)
-    pdf.cell(25, 6, " Señor(es)", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('nombre', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Fecha Emisión", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {datetime.now().strftime('%d/%m/%Y')}", 'R', 1)
-    
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " RUT", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('rut', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Teléfono", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {str(datos_cliente.get('fono', ''))}", 'R', 1)
-    
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Dirección", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('direccion', '')).upper()}"[:45], 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Forma de Pago", 0, 0); pdf.set_font('Arial', '', 8); pdf.cell(52, 6, f": {str(datos_cliente.get('pago', '')).upper()}", 'R', 1)
-    
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Ciudad", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('ciudad', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Comuna", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {str(datos_cliente.get('comuna', '')).upper()}", 'R', 1)
-    
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Giro", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(85, 6, f": {str(datos_cliente.get('giro', '')).upper()}"[:45], 'B', 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(28, 6, " Contacto", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(52, 6, f": {str(datos_cliente.get('contacto', '')).upper()}", 'R,B', 1)
+    fila_dinamica_cliente(" Señor(es)", str(datos_cliente.get('nombre', '')).upper(), " Fecha Emisión", datetime.now().strftime('%d/%m/%Y'))
+    fila_dinamica_cliente(" RUT", str(datos_cliente.get('rut', '')).upper(), " Teléfono", str(datos_cliente.get('fono', '')))
+    fila_dinamica_cliente(" Dirección", str(datos_cliente.get('direccion', '')).upper(), " Forma de Pago", str(datos_cliente.get('pago', '')).upper())
+    fila_dinamica_cliente(" Ciudad", str(datos_cliente.get('ciudad', '')).upper(), " Comuna", str(datos_cliente.get('comuna', '')).upper())
+    fila_dinamica_cliente(" Giro", str(datos_cliente.get('giro', '')).upper(), " Contacto", str(datos_cliente.get('contacto', '')).upper(), is_last=True)
     
     pdf.ln(4)
     
@@ -334,12 +380,8 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
     pdf.set_font('Arial', 'B', 10); pdf.set_fill_color(230, 230, 230)
     pdf.cell(190, 6, "  DATOS DEL VEHÍCULO", 1, 1, 'L', 1)
     
-    pdf.set_font('Arial', 'B', 9)
-    pdf.cell(25, 6, " Marca", 'L', 0); pdf.set_font('Arial', '', 9); pdf.cell(70, 6, f": {str(datos_vehiculo.get('marca', '')).upper()}", 0, 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Modelo", 0, 0); pdf.set_font('Arial', '', 9); pdf.cell(70, 6, f": {str(datos_vehiculo.get('modelo', '')).upper()}", 'R', 1)
-    
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Año", 'L,B', 0); pdf.set_font('Arial', '', 9); pdf.cell(70, 6, f": {str(datos_vehiculo.get('anio', ''))}", 'B', 0)
-    pdf.set_font('Arial', 'B', 9); pdf.cell(25, 6, " Patente", 'B', 0); pdf.set_font('Arial', '', 9); pdf.cell(70, 6, f": {str(datos_vehiculo.get('patente', '')).upper()}", 'R,B', 1)
+    fila_dinamica_vehiculo(" Marca", str(datos_vehiculo.get('marca', '')).upper(), " Modelo", str(datos_vehiculo.get('modelo', '')).upper())
+    fila_dinamica_vehiculo(" Año", str(datos_vehiculo.get('anio', '')), " Patente", str(datos_vehiculo.get('patente', '')).upper(), is_last=True)
 
     pdf.ln(6)
 
@@ -352,7 +394,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
     total_descuento_aplicado = 0
     total_bruto_sin_desc = 0
 
-    def imprimir_fila(desc, total):
+    def imprimir_fila_item(desc, total):
         x = pdf.get_x(); y = pdf.get_y()
         pdf.multi_cell(130, 6, desc, 1, 'L')
         h = pdf.get_y() - y 
@@ -371,7 +413,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
         pdf.cell(190, 5, "  PRODUCTOS / REPUESTOS", 1, 1, 'L', 1)
         pdf.set_font('Arial', '', 9)
         for item in productos:
-            monto_desc = imprimir_fila(item['Descripción'].upper(), item['Total'])
+            monto_desc = imprimir_fila_item(item['Descripción'].upper(), item['Total'])
             total_descuento_aplicado += monto_desc
             total_bruto_sin_desc += item['Total']
             
@@ -380,7 +422,7 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
         pdf.cell(190, 5, "  MANO DE OBRA / SERVICIOS", 1, 1, 'L', 1)
         pdf.set_font('Arial', '', 9)
         for item in servicios:
-            monto_desc = imprimir_fila(item['Descripción'].upper(), item['Total'])
+            monto_desc = imprimir_fila_item(item['Descripción'].upper(), item['Total'])
             total_descuento_aplicado += monto_desc
             total_bruto_sin_desc += item['Total']
 
