@@ -100,13 +100,10 @@ def formato_rut_chileno(rut):
     except: return rut_limpio
 
 def formato_patente_chilena(patente):
-    # Elimina todo lo que no sea letra o número
     pat = re.sub(r'[^A-Z0-9]', '', str(patente).upper())
     if len(pat) == 6:
-        # Si la tercera letra es una consonante, es formato nuevo (XXXX-11)
         if pat[2].isalpha():
             return f"{pat[:4]}-{pat[4:]}"
-        # Si es un número, es formato antiguo (XX-1111)
         else:
             return f"{pat[:2]}-{pat[2:]}"
     return pat
@@ -222,7 +219,6 @@ RUT_EMPRESA = "8.810.453-6"
 DIRECCION = "Caupolicán 0320 - Temuco" 
 COLOR_HEX = "#ff6c15"
 
-# --- HACK CSS PARA DESACTIVAR TECLADO EN SELECTBOX ---
 st.markdown(f"""
 <style>
     .stContainer {{ border: 1px solid rgba(128, 128, 128, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 10px; }}
@@ -294,14 +290,26 @@ class PDF(FPDF):
         self.cell(100, 4, f"C.M.: {DIRECCION}", 0, 1, 'L')
         self.set_font('Arial', 'B', 9); self.cell(100, 4, f"R.U.T.: {RUT_EMPRESA}", 0, 1, 'L')
 
+        # --- CUADRO ESTILO SII (FACTURA ELECTRÓNICA) ---
         self.set_xy(140, 15)
-        self.set_font('Arial', 'B', 16)
         
-        self.multi_cell(60, 4, "COTIZACIÓN DE\nSERVICIO", 'LTR', 'C') 
+        # Color Rojo Puro
+        self.set_text_color(220, 0, 0) 
+        self.set_draw_color(220, 0, 0)
+        self.set_line_width(0.4) # Borde más grueso
+        
+        self.set_font('Arial', 'B', 16)
+        self.cell(60, 10, "COTIZACIÓN", 'LTR', 1, 'C') 
         
         self.set_x(140)
+        self.set_font('Arial', 'B', 14)
         titulo = f"N° {self.correlativo}" if self.correlativo else "N° BORRADOR"
-        self.cell(60, 8, titulo, 'LBR', 1, 'C')
+        self.cell(60, 10, titulo, 'LBR', 1, 'C')
+        
+        # Resetear los colores a negro y el grosor a default para el resto del documento
+        self.set_text_color(0, 0, 0)
+        self.set_draw_color(0, 0, 0)
+        self.set_line_width(0.2)
         
         self.ln(15) 
 
