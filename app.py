@@ -117,7 +117,10 @@ def obtener_y_registrar_correlativo(cliente, total):
                 worksheet_hist.append_row(["Fecha", "Correlativo", "Cliente", "Total"])
             datos = worksheet_hist.get_all_values()
             numero_actual = len(datos) 
-            correlativo_str = str(1650 + numero_actual)
+            
+            NUMERO_INICIO = 1000 
+            correlativo_str = str(NUMERO_INICIO + numero_actual)
+            
             ahora = datetime.now()
             worksheet_hist.append_row([ahora.strftime("%d/%m/%Y %H:%M"), correlativo_str, cliente.upper(), total])
             return correlativo_str
@@ -298,16 +301,13 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
     pdf = PDF(correlativo=st.session_state.get('correlativo_temp', 'BORRADOR'))
     pdf.add_page(); pdf.set_auto_page_break(auto=True, margin=20) 
     
-    # --- VENDEDOR INDEPENDIENTE ---
     pdf.set_y(63)
     pdf.set_font('Arial', 'B', 9)
     pdf.cell(190, 5, f"VENDEDOR: {str(datos_cliente.get('vendedor', '')).upper()}", 0, 1, 'R')
 
-    # --- FUNCIONES DE FILAS DINÁMICAS (Para evitar desbordamientos de texto) ---
     def fila_dinamica_cliente(lbl1, val1, lbl2, val2, is_last=False):
         start_y = pdf.get_y()
         
-        # Columna Izquierda
         pdf.set_font('Arial', 'B', 9)
         pdf.set_xy(10, start_y)
         pdf.cell(25, 6, lbl1, 0, 0, 'L')
@@ -316,7 +316,6 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
         pdf.multi_cell(85, 6, f": {val1}", 0, 'L')
         y_left = pdf.get_y()
         
-        # Columna Derecha
         pdf.set_font('Arial', 'B', 9)
         pdf.set_xy(120, start_y)
         pdf.cell(28, 6, lbl2, 0, 0, 'L')
@@ -325,14 +324,11 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
         pdf.multi_cell(52, 6, f": {val2}", 0, 'L')
         y_right = pdf.get_y()
         
-        # Obtenemos la altura máxima que ocupó la fila
-        max_y = max(y_left, y_right)
-        
-        # Dibujamos las líneas de los bordes externos de la tabla
-        pdf.line(10, start_y, 10, max_y)   # Borde Izquierdo
-        pdf.line(200, start_y, 200, max_y) # Borde Derecho
+        max_y = max(y_left, y_right, start_y + 6)
+        pdf.line(10, start_y, 10, max_y)   
+        pdf.line(200, start_y, 200, max_y) 
         if is_last:
-            pdf.line(10, max_y, 200, max_y) # Borde Inferior solo si es la última
+            pdf.line(10, max_y, 200, max_y) 
             
         pdf.set_xy(10, max_y)
 
@@ -347,15 +343,17 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
         pdf.multi_cell(70, 6, f": {val1}", 0, 'L')
         y_left = pdf.get_y()
         
-        pdf.set_font('Arial', 'B', 9)
-        pdf.set_xy(105, start_y)
-        pdf.cell(25, 6, lbl2, 0, 0, 'L')
-        pdf.set_font('Arial', '', 9)
-        pdf.set_xy(130, start_y)
-        pdf.multi_cell(70, 6, f": {val2}", 0, 'L')
-        y_right = pdf.get_y()
+        y_right = start_y
+        if lbl2:
+            pdf.set_font('Arial', 'B', 9)
+            pdf.set_xy(105, start_y)
+            pdf.cell(25, 6, lbl2, 0, 0, 'L')
+            pdf.set_font('Arial', '', 9)
+            pdf.set_xy(130, start_y)
+            pdf.multi_cell(70, 6, f": {val2}", 0, 'L')
+            y_right = pdf.get_y()
         
-        max_y = max(y_left, y_right)
+        max_y = max(y_left, y_right, start_y + 6)
         pdf.line(10, start_y, 10, max_y)
         pdf.line(200, start_y, 200, max_y)
         if is_last:
@@ -381,7 +379,13 @@ def generar_pdf_pascual(datos_cliente, datos_vehiculo, productos, servicios, des
     pdf.cell(190, 6, "  DATOS DEL VEHÍCULO", 1, 1, 'L', 1)
     
     fila_dinamica_vehiculo(" Marca", str(datos_vehiculo.get('marca', '')).upper(), " Modelo", str(datos_vehiculo.get('modelo', '')).upper())
-    fila_dinamica_vehiculo(" Año", str(datos_vehiculo.get('anio', '')), " Patente", str(datos_vehiculo.get('patente', '')).upper(), is_last=True)
+    
+    # Evaluar si hay siniestro para saber si la fila de Año/Patente es la última
+    tiene_siniestro = bool(datos_vehiculo.get('siniestro', ''))
+    fila_dinamica_vehiculo(" Año", str(datos_vehiculo.get('anio', '')), " Patente", str(datos_vehiculo.get('patente', '')).upper(), is_last=not tiene_siniestro)
+
+    if tiene_siniestro:
+        fila_dinamica_vehiculo(" N° Siniestro", str(datos_vehiculo.get('siniestro', '')).upper(), "", "", is_last=True)
 
     pdf.ln(6)
 
@@ -528,6 +532,22 @@ with col_centro[1]:
 
         st.markdown("---")
         st.markdown("#### Datos de Facturación")
+        
+        # --- SELECTOR DE TIPO DE CLIENTE ---
+        tipo_cliente = st.radio("Clasificación del Cliente:", ["Particular", "Empresa", "Compañía de Seguros"], horizontal=True)
+        
+        siniestro_val = ""
+        if tipo_cliente == "Compañía de Seguros":
+            c_seg1, c_seg2 = st.columns(2)
+            lista_seguros = ["BCI Seguros", "BICE Vida", "Chilena Consolidada (Zurich)", "Consorcio", "HDI Seguros", "Liberty Seguros", "Mapfre", "Reale Seguros", "Renta Nacional", "Seguros SURA", "Zenit Seguros", "Fidelidade", "Southbridge", "--- Otra ---"]
+            seguro_sel = c_seg1.selectbox("Seleccione Aseguradora", lista_seguros)
+            if seguro_sel != "--- Otra ---" and sel_cli == "--- Nuevo Cliente ---":
+                def_nombre = seguro_sel
+                def_giro = "COMPAÑÍA DE SEGUROS"
+            siniestro_val = c_seg2.text_input("N° de Siniestro", placeholder="Ej: 123456789")
+        elif tipo_cliente == "Particular" and sel_cli == "--- Nuevo Cliente ---":
+            def_giro = "PARTICULAR"
+
         c_e1, c_e2 = st.columns([3, 1])
         cliente_final = c_e1.text_input("Señor(es) / Razón Social", value=def_nombre, placeholder="Ej: Transportes Garmendia S.A.")
         rut_empresa = c_e2.text_input("RUT", value=def_rut, placeholder="Ej: 76543210-K")
@@ -571,6 +591,7 @@ with col_centro[1]:
                 st.session_state.fono_confirmado = contacto_fono
                 st.session_state.pago_confirmado = condicion_pago
                 st.session_state.vendedor_confirmado = vendedor_nombre.upper()
+                st.session_state.siniestro_confirmado = siniestro_val.upper()
                 st.session_state.paso_actual = 2
                 guardar_borrador_nube() 
                 st.rerun()
@@ -853,7 +874,8 @@ with col_centro[1]:
                             "marca": marca_final if marca_final not in ["--- Seleccione Marca ---", "--- AGREGAR OTRA MARCA ---", "---"] else "",
                             "modelo": modelo_final if modelo_final not in ["---", "--- AGREGAR OTRO MODELO ---"] else "",
                             "anio": anio_final if anio_final not in ["---", "OTRO (MÁS ANTIGUO)"] else "",
-                            "patente": formato_patente_chilena(patente_sel)
+                            "patente": formato_patente_chilena(patente_sel),
+                            "siniestro": st.session_state.get('siniestro_confirmado', '')
                         }
                         
                         pdf_bytes = generar_pdf_pascual(datos_cliente, datos_vehiculo, st.session_state.items_productos, st.session_state.items_servicios, descuento_pct)
