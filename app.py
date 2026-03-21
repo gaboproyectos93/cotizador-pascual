@@ -164,8 +164,9 @@ st.markdown(f"""
     input[type=number]::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     .stButton > button[kind="primary"] {{ background-color: {COLOR_HEX} !important; border-color: {COLOR_HEX} !important; color: white !important; font-weight: bold; padding: 10px; }}
     .stButton > button[kind="primary"]:hover {{ background-color: #E65A0D !important; border-color: #E65A0D !important; }}
-    /* Eliminamos el menú por defecto de Streamlit */
-    #MainMenu {{ visibility: hidden !important; }} footer {{ display: none !important; }} header {{ display: none !important; }}
+    
+    /* Restauramos el header y el MainMenu para poder cambiar a modo oscuro */
+    footer {{ display: none !important; }} 
 </style>
 """, unsafe_allow_html=True)
 
@@ -301,7 +302,7 @@ if 'paso_actual' not in st.session_state: st.session_state.paso_actual = 1
 
 col_centro = st.columns([1, 2, 1])
 
-# --- CABECERA PRINCIPAL (Visible en todos los pasos) ---
+# --- CABECERA PRINCIPAL ---
 with col_centro[1]:
     c_logo, c_btn = st.columns([3, 1], vertical_alignment="center")
     with c_logo:
@@ -375,7 +376,7 @@ with col_centro[1]:
                 guardar_borrador_nube() 
                 st.rerun()
 
-        # --- MÓDULO DE ADMINISTRACIÓN DE CLIENTES (FUERA DEL SIDEBAR) ---
+        # --- MÓDULO DE ADMINISTRACIÓN DE CLIENTES ---
         st.markdown("---")
         with st.expander("⚙️ Administrar Base de Datos de Clientes"):
             st.caption("Modifica o elimina clientes guardados.")
